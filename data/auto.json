@@ -1,0 +1,243 @@
+{
+    "sky-garden": [
+        {
+            "key": "tree-dua-hau",
+            "name": "Cào dưa hấu",
+            "disabled": false,
+            "order": 1,
+            "recommend": false,
+            "category" : "tree"
+        },
+        {
+            "key": "vp-1",
+            "name": "Trà Hoa Hồng",
+            "disabled": false,
+            "order": 1,
+            "recommend": false,
+            "category" : "vp"
+        },
+        {
+            "key": "vp-8",
+            "name": "Tinh dầu dừa",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category" : "vp"
+        },
+        {
+            "key": "vp-9",
+            "name": "Tinh dầu dừa + trà hoa hồng",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category" : "vp"
+        },
+        {
+            "key": "vp-10",
+            "name": "Vải đỏ + nước tuyết",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category" : "vp"
+        },
+        {
+            "key": "vp-2",
+            "name": "Tinh dầu hoa hồng + Trà Hoa Hồng",
+            "disabled": false,
+            "order": 1,
+            "recommend": false,
+            "category" : "vp"
+        },
+        {
+            "key": "vp-3",
+            "name": "Vải Tím",
+            "disabled": false,
+            "order": 2,
+            "recommend": false,
+            "category" : "vp"
+        },
+        {
+            "key": "trong-cay-sk",
+            "name": "Trồng Cây Sự Kiện",
+            "disabled": false,
+            "order": 4,
+            "recommend": false,
+            "category": "event"
+        },
+        {
+            "key": "mua-vpsk-nha-ban",
+            "name": "Mua VPSK - Nhà Bạn",
+            "disabled": false,
+            "order": 5,
+            "recommend": false,
+            "category": "event"
+        },
+        {
+            "key": "chuyen-vpsk-ga",
+            "name": "Chuyển VPSK - Gà",
+            "disabled": false,
+            "order": 6,
+            "recommend": false,
+            "category": "event"
+        },
+        {
+            "key": "chuyen-vpsk-bo",
+            "name": "Chuyển VPSK - Bò",
+            "disabled": false,
+            "order": 7,
+            "recommend": false,
+            "category": "event"
+        },
+        {
+            "key": "chuyen-vpsk-heo",
+            "name": "Chuyển VPSK - Heo",
+            "disabled": false,
+            "order": 8,
+            "recommend": false,
+            "category": "event"
+        },
+        {
+            "key": "chuyen-vpsk-cuu",
+            "name": "Chuyển VPSK - Cừu",
+            "disabled": false,
+            "order": 9,
+            "recommend": false,
+            "category": "event"
+        },
+        {
+            "key": "xa-vpsk-dua",
+            "name": "Xả VPSK - Dừa",
+            "disabled": false,
+            "order": 10,
+            "recommend": false,
+            "category": "event"
+        },
+        {
+            "key": "xa-vpsk-ga",
+            "name": "Xả VPSK - Gà",
+            "disabled": false,
+            "order": 10,
+            "recommend": false,
+            "category": "event"
+        },
+        {
+            "key": "xa-vpsk-bo",
+            "name": "Xả VPSK - Bò",
+            "disabled": false,
+            "order": 11,
+            "recommend": false,
+            "category": "event"
+        },
+        {
+            "key": "xa-vpsk-heo",
+            "name": "Xả VPSK - Heo",
+            "disabled": false,
+            "order": 12,
+            "recommend": false,
+            "category": "event"
+        },
+        {
+            "key": "xa-vpsk-cuu",
+            "name": "Xả VPSK - Cừu",
+            "disabled": false,
+            "order": 13,
+            "recommend": false,
+            "category": "event"
+        },
+        {
+            "key": "thanh-tuu-1",
+            "name": "TT - Gặp Nhau Mỗi Ngày",
+            "disabled": false,
+            "order": 14,
+            "recommend": false
+        },
+        {
+            "key": "vp-4",
+            "name": "Tinh dầu hoa hồng",
+            "disabled": false,
+            "order": 2,
+            "recommend": false,
+            "category" : "vp"
+        },
+        {
+            "key": "vp-5",
+            "name": "Vải tím + tinh dầu dừa",
+            "disabled": false,
+            "order": 0,
+            "recommend": true,
+            "category" : "vp"
+        },
+        {
+            "key": "vp-6",
+            "name": "Vải đỏ + nước táo",
+            "disabled": false,
+            "order": 1,
+            "recommend": false,
+            "category" : "vp"
+        },
+        {
+            "key": "chuyen-vpsk-kinh",
+            "name": "Chuyển VPSK - Kính",
+            "disabled": false,
+            "order": 6,
+            "recommend": true,
+            "category": "event"
+        },
+        {
+            "key": "chuyen-vpsk-kem",
+            "name": "Chuyển VPSK - Kem",
+            "disabled": false,
+            "order": 6,
+            "recommend": true,
+            "category": "event"
+        },
+        {
+            "key": "chuyen-vpsk-dua",
+            "name": "Chuyển VPSK - Dừa",
+            "disabled": false,
+            "order": 6,
+            "recommend": true,
+            "category": "event"
+        },
+        {
+            "key": "vp-7",
+            "name": "Vải Đỏ",
+            "disabled": false,
+            "order": 1,
+            "recommend": false,
+            "category" : "vp"
+        },
+        {
+            "key": "bat-ong",
+            "name": "Bắt ong vàng",
+            "disabled": false,
+            "order": 1,
+            "recommend": false,
+            "category" : "Bọ"
+        },
+        {
+            "key": "bat-buom",
+            "name": "Bắt bướm hồng",
+            "disabled": false,
+            "order": 1,
+            "recommend": false,
+            "category" : "Bọ"
+        },
+        {
+            "key": "bat-chuon",
+            "name": "Bắt chuồn chuồn",
+            "disabled": false,
+            "order": 1,
+            "recommend": false,
+            "category" : "Bọ"
+        },
+        {
+            "key": "test",
+            "name": "Test",
+            "disabled": false,
+            "order": 1,
+            "recommend": false,
+            "category" : "tree"
+        }
+    ]
+}

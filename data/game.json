@@ -1,0 +1,10 @@
+{
+    "listGameOption": [
+        {
+            "key": "sky-garden",
+            "name": "Khu Vườn Trên Mây",
+            "disabled": false,
+            "order": 0
+        }
+    ]
+}
