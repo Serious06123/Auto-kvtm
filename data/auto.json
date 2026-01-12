@@ -9,6 +9,14 @@
             "category" : "vp"
         },
         {
+            "key": "test-sk",
+            "name": "Test su kien",
+            "disabled": false,
+            "order": 1,
+            "recommend": false,
+            "category" : "tree"
+        },
+        {
             "key": "tree-dua-hau",
             "name": "Cào dưa hấu",
             "disabled": false,

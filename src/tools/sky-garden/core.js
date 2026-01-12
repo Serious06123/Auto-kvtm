@@ -638,7 +638,7 @@ const sellEventItems = async (driver, itemKey, quantity = 9999, isAds) => {
 
 const buy8SlotItem = async (driver) => {
     // open
-    await driver.tap(66.25, 83.7)
+    await driver.tap(64.3, 85.5)
     await driver.sleep(0.3)
 
     let count = 2;
@@ -662,7 +662,7 @@ const goFriendHouse = async (driver, index) => {
 }
 
 const goMyHouse = async (driver) => {
-    await driver.tapItemOnScreen(_getItemPath(ItemKeys.myHouse), SlotPositions.p3)
+    await driver.tapItemOnScreen(_getItemPath(ItemKeys.myHouse), SlotPositions.p3p4)
     await driver.sleep(2)
 }
 
