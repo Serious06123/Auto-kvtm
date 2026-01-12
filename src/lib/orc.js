@@ -7,12 +7,12 @@ let workerPromise = null;
 async function getWorker() {
   if (!workerPromise) {
     workerPromise = (async () => {
-      const worker = await createWorker();         // online: tự tải eng.traineddata
+      const worker = await createWorker();         
       await worker.loadLanguage('eng');
       await worker.initialize('eng');
       await worker.setParameters({
-        tessedit_char_whitelist: '0123456789',     // chỉ đọc số
-        tessedit_pageseg_mode: '7',                // 1 dòng text (8: 1 từ, 10: 1 ký tự)
+        tessedit_char_whitelist: '0123456789',     
+        tessedit_pageseg_mode: '7',                
         user_defined_dpi: '280',
       });
       return worker;

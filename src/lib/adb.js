@@ -1,13 +1,16 @@
 const Bluebird = require('bluebird')
+const path = require('path')
 const { runExecAsync, runSpawn } = require('../helper/shell')
 const { logErrMsg } = require('../service/log')
+
+const adbPath = path.join(__dirname, '../../bin/platform-tools/adb.exe')
 
 const getDeviceNameById = async (deviceId) => {
     if (!deviceId.includes("emulator")) return deviceId
     try {
         switch (process.platform) {
             case 'darwin':
-                const output = await runExecAsync(`adb -s ${deviceId} emu avd name`)
+                const output = await runExecAsync(`${adbPath} -s ${deviceId} emu avd name`)
                 return output.match(/([^\r\n]+)/g)[0].replaceAll('_', ' ')
             default:
                 return deviceId
@@ -22,7 +25,7 @@ const getDeviceNameById = async (deviceId) => {
 class ADBHelper {
     static getDevices = async () => {
         const ignoreText = ['device', 'offline']
-        const output = await runExecAsync(`adb devices`)
+        const output = await runExecAsync(`${adbPath} devices`)
         const deviceIds = output
             .substring(output.indexOf('\n') + 1)
             .match(/[\S]+/g)
@@ -34,10 +37,10 @@ class ADBHelper {
         }))
     }
 
-    static screenCap = async (deviceId, path) => await runExecAsync(`adb -s ${deviceId} exec-out screencap -p > ${path}`)
+    static screenCap = async (deviceId, path) => await runExecAsync(`${adbPath} -s ${deviceId} exec-out screencap -p > ${path}`)
 
     static screenRecord = (deviceId, outputHandler = null) => {
-        const streamProcess = runSpawn(`adb -s ${deviceId} exec-out screenrecord --output-format=h264 -`)
+        const streamProcess = runSpawn(`${adbPath} -s ${deviceId} exec-out screenrecord --output-format=h264 -`)
         streamProcess.stdout.on('data', (data) => {
             outputHandler && outputHandler(data)
         })

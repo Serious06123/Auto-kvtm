@@ -1,6 +1,14 @@
 {
     "sky-garden": [
         {
+            "key": "testbando",
+            "name": "Test ban do",
+            "disabled": false,
+            "order": 1,
+            "recommend": false,
+            "category" : "vp"
+        },
+        {
             "key": "tree-dua-hau",
             "name": "Cào dưa hấu",
             "disabled": false,

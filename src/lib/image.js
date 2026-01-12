@@ -26,13 +26,13 @@ getCropInfo = (findPosition, isRotated) => {
     case '24':
       result = { x: 500, y: 0, w: 500, h: 1000 }; break
     case 'caytrong':
-      result = { x: 123, y: 734, w: 257, h: 166 }; break
+      result = { x: 176, y: 780, w: 234, h: 156 }; break
     case 'thuhoach':
-      result = { x: 216, y: 702, w: 100, h: 103 }; break
+      result = { x: 281, y: 750, w: 100, h: 103 }; break
     case 'bando':
-      result = { x:12 , y: 300, w: 488, h: 460 }; break
+      result = { x:30 , y: 365, w: 370, h: 325 }; break
     case 'moruong':
-      result = { x: 250, y: 380, w: 400, h: 400 }; break
+      result = { x: 293, y: 510, w: 200, h: 200 }; break
     case 'fullkho':
       result = { x: 172, y: 301, w: 582, h: 304 }; break
     case 'kc':
@@ -40,7 +40,7 @@ getCropInfo = (findPosition, isRotated) => {
     case 'cam':
       result = { x: 540, y: 850, w: 460, h: 150 }; break
     case 'quayhang':
-      result = { x: 155, y: 324, w: 745, h: 400 }; break
+      result = { x: 200, y: 341, w: 600, h: 400 }; break
     case 'batbo':
       result = { x: 294, y: 787, w: 566, h: 69 }; break
     default:

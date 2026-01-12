@@ -2,7 +2,6 @@
     "name": "auto-tools",
     "description": "Auto Tools",
     "scripts": {
-        "prepare": "husky",
         "appium": "appium --base-path=/wd/hub --log-timestamp --local-timezone --log-no-colors --log-level error:warn --log ./log/appium.txt",
         "app": "node src/server.js",
         "build": "webpack --mode=development --watch",
@@ -55,7 +54,6 @@
         "css-loader": "^7.1.2",
         "css-minimizer-webpack-plugin": "^7.0.2",
         "html-webpack-plugin": "^5.6.3",
-        "husky": "^9.1.7",
         "mini-css-extract-plugin": "^2.9.2",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",

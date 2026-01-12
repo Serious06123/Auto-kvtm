@@ -1,5 +1,4 @@
 const express = require('express')
-// require('express-async-errors')
 const router = require('./router')
 const { getLiveScreen } = require('./websocket')
 const { join } = require('path')

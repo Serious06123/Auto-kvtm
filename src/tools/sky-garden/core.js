@@ -59,7 +59,7 @@ const openGame = async (driver) => {
     await driver.sleep(1)
     while (!kc) {
         if (count > 5) return await openGame(driver);
-        kc = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.shopGem), SlotPositions.p3)
+        kc = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.shopGem), SlotPositions.p3p4)
         count++
     }
     count = 0
@@ -77,13 +77,13 @@ const openChests = async (driver) => {
     await goDownLast(driver);
     let isFound = await driver.haveItemOnScreen(_getItemPath(ItemKeys.chest), SlotPositions.moruong)
     if (isFound) {
-        await driver.tap(35.0, 54.7)
+        await driver.tap(37.0, 62.7)
         await driver.sleep(0.2)
-        await driver.tap(35.0, 54.7)
+        await driver.tap(37.0, 62.7)
         await driver.sleep(0.5)
-        await driver.tap(21.25, 65.0)
+        await driver.tap(26.5, 63.0)
         await driver.sleep(0.2)
-        await driver.tap(21.25, 65.0)
+        await driver.tap(26.5, 63.0)
         await driver.sleep(0.5)
         for (let i = 0; i < 10; i++) {
             await driver.tap(50.0, 56.8)
@@ -296,7 +296,7 @@ const findTreeOnScreen = async (driver, treeKey, isFindNext = true) => {
     let slotItem = await driver.getCoordinateItemOnScreen(_getItemPath(treeKey), SlotPositions.caytrong)
     let retryCount = 0
     while (!slotItem && retryCount++ < 5) {
-        isFindNext ? await driver.tap(40.625, 81.2) : await driver.tap(10, 81.2)
+        isFindNext ? await driver.tap(42.2, 85) : await driver.tap(16.5, 84.3)
         await driver.sleep(0.2)
         slotItem = await driver.getCoordinateItemOnScreen(_getItemPath(treeKey), SlotPositions.caytrong)
     }
@@ -371,7 +371,7 @@ const makeItems = async (driver, floor = 1, slot = 0, number = 1, mutex) => {
     if (mutex.value >= 1) {
         return;
     }
-    const position = { x: 21.875, y: floor === 1 ? 93.6 : 67.3 };
+    const position = { x: 26.3, y: floor === 1 ? 93.6 : 67.3 };
 
     for (let i = 0; i < 12; i++) {
         await driver.tap(position.x, position.y);
@@ -416,9 +416,9 @@ const makeItems = async (driver, floor = 1, slot = 0, number = 1, mutex) => {
     }
 
     // 6) Đóng panel, quay lại game
-    await driver.tap(10.0, floor === 1 ? 83.3 : 58.1);
+    await driver.tap(16.0, floor === 1 ? 86.0 : 65.0);
     await driver.sleep(0.1);
-    await driver.tap(78.75, 61.2);
+    await driver.tap(73.5, 60.0);
     await driver.sleep(0.1);
     await backToGame(driver);
 
@@ -434,7 +434,7 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
     await goDownLast(driver)
     await driver.sleep(0.2)
     // open
-    await driver.tap(66.25, 83.7)
+    await driver.tap(64.3, 85.5)
     await driver.sleep(1)
 
     // back front market
@@ -446,8 +446,8 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
 
     // back front market
     await driver.action([
-        { duration: 0, x: 16.25, y: 54.9 },
-        { duration: 200, x: 78.75, y: 54.9 },
+        { duration: 0, x: 22.3, y: 54.0 },
+        { duration: 200, x: 75.5, y: 54.0 },
     ])
     // buy all items
     let itemId = _getItemId(items)
@@ -483,9 +483,7 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
             await driver.sleep(0.5)
             await driver.tap(option_x, option_y)
             await driver.sleep(0.3)
-
-            // choose item by image
-            if (await driver.tapItemOnScreen(_getItemPath(itemId), SlotPositions.p1p3)) {
+            if (await driver.tapItemOnScreen(_getItemPath(itemId), SlotPositions.bando)) {
                 await _sell(driver)
                 itemId = _getItemId(items)
                 mutex2.value++
@@ -500,15 +498,13 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
         }
 
         var emptySlot = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.emptySellSlot), SlotPositions.quayhang)
-
         if (emptySlot != null) {
             await driver.tap(emptySlot.x, emptySlot.y)
-            await driver.sleep(0.5)
+            await driver.sleep(0.6)
             await driver.tap(option_x, option_y)
             await driver.sleep(0.3)
-
             // choose item by image
-            if ((await driver.tapItemOnScreen(_getItemPath(itemId), SlotPositions.p1p3))) {
+            if ((await driver.tapItemOnScreen(_getItemPath(itemId), SlotPositions.bando))) {
                 await _sell(driver)
                 itemId = _getItemId(items)
                 mutex2.value++
@@ -671,7 +667,7 @@ const goMyHouse = async (driver) => {
 }
 
 const makeEvents = async (driver) => {
-    if (await driver.tapItemOnScreen(_getItemPath(ItemKeys.livestockEvents), SlotPositions.cam)) {
+    if (await driver.tapItemOnScreen(_getItemPath(ItemKeys.livestockEvents), SlotPositions.p4)) {
         await driver.sleep(2)
         for (let i = 0; i < 5; i++) {
             await driver.tap(41.0, 66.1)
@@ -692,7 +688,7 @@ const makeEvents = async (driver) => {
 }
 
 const haveshoponscreen = async (driver) => {
-    let check = await driver.haveItemOnScreen(_getItemPath(ItemKeys.shopGem), SlotPositions.p3)
+    let check = await driver.haveItemOnScreen(_getItemPath(ItemKeys.shopGem), SlotPositions.p3p4)
     return check
 }
 
@@ -743,27 +739,21 @@ const _sell = async (driver, isAds = true) => {
     await driver.sleep(0.2)
     // increase price
     for (let i = 0; i < 10; i++) {
-        await driver.tap(82.5, 46.9)
+        await driver.tap(85.0, 54.1)
         await driver.sleep(DelayTime)
     }
     await driver.sleep(0.2)
     // stop increase price
     if (!isAds) {
         // disable ads
-        await driver.tap(73.75, 66.1)
+        await driver.tap(78.1, 63.7)
         await driver.sleep(0.2)
         // click sell
-        await driver.tap(73.75, 73.2)
+        await driver.tap(78.0, 69.2)
         await driver.sleep(0.2)
-        await driver.tap(62.4, 26.3)
-        await driver.sleep(0.1)
     } else {
         // click sell
-        await driver.tap(73.75, 73.2)
-        await driver.sleep(0.2)
-        await driver.tap(50.0, 73.4)
-        await driver.sleep(0.2)
-        await driver.tap(62.4, 26.3)
+        await driver.tap(78.0, 69.2)
         await driver.sleep(0.2)
     }
 }

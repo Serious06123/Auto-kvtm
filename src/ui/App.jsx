@@ -13,7 +13,7 @@ const App = (props) => {
     return (
         <Layout className={styles.layout}>
             <Header className={styles.header}>
-                <h1>Made by Serious</h1>
+                <h1>Developed by Serious based on Open Source (CongAnhHCMUS)</h1>
             </Header>
             <Content className={styles.content}>
                 <Filter refreshTime={refreshTime} setRefreshTime={setRefreshTime} />
