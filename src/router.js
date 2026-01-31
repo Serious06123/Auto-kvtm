@@ -6,6 +6,7 @@ const { getMetadata, createAuto, readAuto, updateAuto } = require('./api/createA
 const { getRunningDevice, viewCurrentScreenDevice } = require('./api/device')
 const { startAuto, stopAuto, stopAllAuto } = require('./api/auto')
 const { getLogs, clearLogs } = require('./api/logs')
+const { handleUpload } = require('./api/upload')
 
 // default
 router.get('/', function (req, res) {
@@ -33,5 +34,8 @@ router.post('/updateAuto', updateAuto)
 // logs api
 router.get('/logs', getLogs)
 router.delete('/logs', clearLogs)
+
+// upload api
+router.post('/upload', handleUpload)
 
 module.exports = router

@@ -4,7 +4,7 @@ import * as styles from './SkyGarden.module.css'
 import axios from 'axios'
 import CreateAutoModal from './CreateAutoModal'
 
-const CATS = ['tree', 'vp', 'event'];
+const CATS = ['tree', 'vp', 'event', 'other'];
 
 // Suy ra "event" nếu thiếu category (từ dữ liệu bạn gửi)
 const normalizeCategory = (item) => {
@@ -23,7 +23,7 @@ const SkyGarden = (props) => {
   const { selectedGame } = props
 
   const [selectedAuto, setSelectedAuto] = useState('') // gửi lên backend
-  const [selectedByCat, setSelectedByCat] = useState({ tree: null, vp: null, event: null })
+  const [selectedByCat, setSelectedByCat] = useState({ tree: null, vp: null, event: null, other: null })
 
   const [frequency, setFrequency] = useState(9999)
   const [quantity, setQuantity] = useState(9999)
@@ -37,13 +37,13 @@ const SkyGarden = (props) => {
       const sorted = data.map(normalizeCategory).sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       setAutoOption(sorted)
       // Không chọn gì mặc định
-      setSelectedByCat({ tree: null, vp: null, event: null })
+      setSelectedByCat({ tree: null, vp: null, event: null, other: null })
       setSelectedAuto('')
     })
   }, [selectedGame])
 
   const optionsByCat = useMemo(() => {
-    const res = { tree: [], vp: [], event: [] }
+    const res = { tree: [], vp: [], event: [], other: [] }
     for (const it of autoOption) {
       if (CATS.includes(it.category)) res[it.category].push(it)
     }
@@ -71,7 +71,7 @@ const SkyGarden = (props) => {
 
   // Chỉ cho chọn 1 trong 3
   const onChangeByCat = (cat) => (val) => {
-    const next = { tree: null, vp: null, event: null, [cat]: val ?? null }
+    const next = { tree: null, vp: null, event: null, other: null, [cat]: val ?? null }
     setSelectedByCat(next)
     setSelectedAuto(val || '')
   }
@@ -136,6 +136,17 @@ const SkyGarden = (props) => {
                     value={selectedByCat.event ?? undefined}
                     onChange={onChangeByCat('event')}
                   />
+
+                  {/* OTHER */}
+                  <Select
+                    {...commonSelectProps}
+                    popupMatchSelectWidth={false}
+                    popupClassName={styles.selectPopup}
+                    placeholder="Other"
+                    options={optionsByCat.other.map(toOption)}
+                    value={selectedByCat.other ?? undefined}
+                    onChange={onChangeByCat('other')}
+                  />
                 </Flex>
               </Col>
 
@@ -156,10 +167,10 @@ const SkyGarden = (props) => {
                 </Row>
                 <Row gutter={[40, 20]}>
                   <Col xs={12} sm={6} xl={6}>
-                    <Checkbox value="kho1">Auto nâng kho 1</Checkbox>
+                    <Checkbox value="kho1">Auto nâng kho 1(chưa hoàn thiện)</Checkbox>
                   </Col>
                   <Col xs={12} sm={6} xl={6}>
-                    <Checkbox value="kho2">Auto nâng kho 2</Checkbox>
+                    <Checkbox value="kho2">Auto nâng kho 2(chưa hoàn thiện)</Checkbox>
                   </Col>
                 </Row>
               </Col>

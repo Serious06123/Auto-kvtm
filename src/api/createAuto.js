@@ -77,7 +77,7 @@ const readAuto = async (req, res, next) => {
         const sleepMatch = txt.match(/await driver\.sleep\((\d+)\)/)
         const sleepSeconds = sleepMatch ? parseInt(sleepMatch[1], 10) : 8
 
-        res.json({ key, name: meta.name, category: meta.category, loopCount, sleepSeconds, logic: { production, sell } })
+        res.json({ key, name: meta.name, category: meta.category, order: meta.order, recommend: meta.recommend, loopCount, sleepSeconds, logic: { production, sell } })
     } catch (e) {
         console.error(e)
         res.status(500).json({ error: e.message })
@@ -128,7 +128,7 @@ const createAuto = async (req, res, next) => {
         lines.push(`  for (let i = 0; i < ${parseInt(loopCount || 5)}; i++) {`)
         lines.push("    if (mutex.value != 1) {")
         lines.push('      await produceItems(driver, i == ' + (parseInt(loopCount || 5) - 1) + ', mutex);')
-        lines.push('    } ') 
+        lines.push('    } ')
         lines.push('  }')
         lines.push('')
         lines.push('  if (sell) {')
@@ -161,7 +161,7 @@ const createAuto = async (req, res, next) => {
 const updateAuto = async (req, res, next) => {
     try {
         const payload = req.body
-        const { name, key, category = 'vp', logic = {}, loopCount = 5, sleepSeconds = 8, sellItems = false, removeItems = false } = payload
+        const { name, key, category = 'vp', order = 0, recommend = false, logic = {}, loopCount = 5, sleepSeconds = 8, sellItems = false, removeItems = false } = payload
 
         if (!name || !key) return res.status(400).json({ error: 'name and key required' })
 
@@ -171,10 +171,10 @@ const updateAuto = async (req, res, next) => {
                 const existingPath = path.resolve(__dirname, '../tools/sky-garden/auto', `${key}.js`)
                 if (fs.existsSync(existingPath)) {
                     const existingTxt = fs.readFileSync(existingPath, 'utf8')
-                        const sellMatch = existingTxt.match(/const sellItems\s*=\s*async[^\{]*\{\n([\s\S]*?)\n\}/m)
-                        if (sellMatch && sellMatch[1]) {
-                            logic.sell = sellMatch[1].split('\n').map((l) => l.replace(/^\s+|\s+$/g, '')).filter((l) => l && !l.startsWith('//'))
-                        }
+                    const sellMatch = existingTxt.match(/const sellItems\s*=\s*async[^\{]*\{\n([\s\S]*?)\n\}/m)
+                    if (sellMatch && sellMatch[1]) {
+                        logic.sell = sellMatch[1].split('\n').map((l) => l.replace(/^\s+|\s+$/g, '')).filter((l) => l && !l.startsWith('//'))
+                    }
                 }
             } catch (e) {
                 // ignore and continue
@@ -240,9 +240,9 @@ const updateAuto = async (req, res, next) => {
         if (!data['sky-garden']) data['sky-garden'] = []
         const idx = data['sky-garden'].findIndex((x) => x.key === key)
         if (idx === -1) {
-            data['sky-garden'].push({ key, name, disabled: false, order: 0, recommend: false, category })
+            data['sky-garden'].push({ key, name, disabled: false, order, recommend, category })
         } else {
-            data['sky-garden'][idx] = { ...data['sky-garden'][idx], name, category }
+            data['sky-garden'][idx] = { ...data['sky-garden'][idx], name, category, order, recommend }
         }
         writeAutoData(data)
 

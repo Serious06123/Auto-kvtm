@@ -1,20 +1,19 @@
 const core = require('../core')
-const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralKeys } = require('../const')
+const { SellItemOptions, ProductKeys, TreeKeys , ProductTreeKeys, ProductMineralKeys ,OtherKeys } = require('../const')
 
 const produceItems = async (driver, isLast, mutex) => {
   await core.goUp(driver)
-  await core.plantTrees(driver, mutex, TreeKeys.duaHau, 4, 5) 
+  await core.plantTrees(driver, mutex, TreeKeys.duaHau, 4, 5)
   await core.goUp(driver,4)
-  await core.plantTrees(driver, mutex, TreeKeys.duaHau, 4, 5) 
+  await core.plantTrees(driver, mutex, TreeKeys.duaHau, 4, 5)
   await core.goDownLast(driver)
   await core.goUp(driver)
-  await driver.sleep(1.5)
   await core.harvestTrees(driver, mutex, 4, 5)
   await core.goUp(driver,4)
   await core.harvestTrees(driver, mutex, 4, 5)
   await core.goDownLast(driver)
   if (!isLast) {
-    await driver.sleep(0.1)
+    await driver.sleep(8)
   }
 }
 
@@ -27,6 +26,7 @@ const sellItems = async (driver, mutex, mutex2, removeItems = false) => {
 module.exports = async (driver, gameOptions) => {
   const { sellItems: sell } = gameOptions;
   const { removeItems: removeItems } = gameOptions;
+  const { quantity } = gameOptions;
   let mutex = { value: 0 };
   let mutex2 = { value: 0 };
   for (let i = 0; i < 10; i++) {
@@ -34,6 +34,7 @@ module.exports = async (driver, gameOptions) => {
       await produceItems(driver, i == 9, mutex);
     } 
   }
+
   if (sell) {
     await sellItems(driver, mutex, mutex2, removeItems)
   }

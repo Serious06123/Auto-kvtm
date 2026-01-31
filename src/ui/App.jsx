@@ -6,6 +6,7 @@ import * as styles from './App.module.css'
 
 import Filter from './component/Filter/Filter'
 import Table from './component/Content/Table'
+import UploadImage from './component/UploadImage'
 
 const App = (props) => {
     const [refreshTime, setRefreshTime] = useState(moment().format('LTS'))
@@ -17,6 +18,7 @@ const App = (props) => {
             </Header>
             <Content className={styles.content}>
                 <Filter refreshTime={refreshTime} setRefreshTime={setRefreshTime} />
+                <UploadImage />
                 <Table refreshTime={refreshTime} setRefreshTime={setRefreshTime} />
             </Content>
             <Footer className={styles.footer}>

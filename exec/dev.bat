@@ -1,0 +1,6 @@
+@echo off
+cd ..
+echo Starting Webpack Watcher...
+start "Webpack Watcher" npm run build
+echo Starting Node Server...
+npm run app

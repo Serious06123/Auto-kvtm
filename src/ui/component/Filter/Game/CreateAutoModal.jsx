@@ -9,6 +9,8 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto }) => {
   const [name, setName] = useState('')
   const [key, setKey] = useState('')
   const [category, setCategory] = useState('vp')
+  const [order, setOrder] = useState(0)
+  const [recommend, setRecommend] = useState(false)
   const [loopCount, setLoopCount] = useState(5)
   const [sleepSeconds, setSleepSeconds] = useState(8)
   const [logic, setLogic] = useState('')
@@ -21,11 +23,13 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto }) => {
 
   useEffect(() => {
     if (!open) return
-    axios.get('/api/autoMetadata').then((r) => setMetadata(r.data)).catch(() => {})
+    axios.get('/api/autoMetadata').then((r) => setMetadata(r.data)).catch(() => { })
     if (editingAuto) {
       setName(editingAuto.name || '')
       setKey(editingAuto.key || '')
       setCategory(editingAuto.category || 'vp')
+      setOrder(editingAuto.order || 0)
+      setRecommend(editingAuto.recommend || false)
       setLoopCount(editingAuto.loopCount || 5)
       setSleepSeconds(editingAuto.sleepSeconds || 8)
       setLogic((editingAuto.logic && editingAuto.logic.production ? editingAuto.logic.production.join('\n') : '') || '')
@@ -42,6 +46,8 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto }) => {
       setName('')
       setKey('')
       setCategory('vp')
+      setOrder(0)
+      setRecommend(false)
       setLoopCount(5)
       setSleepSeconds(0)
       setLogic('')
@@ -56,6 +62,8 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto }) => {
       name,
       key,
       category,
+      order,
+      recommend,
       loopCount,
       sleepSeconds,
       logic: {
@@ -134,7 +142,7 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto }) => {
         </Form.Item>
       )
     }
-    if ( selectedFunc === 'goDownLast') {
+    if (selectedFunc === 'goDownLast') {
       return null
     }
     if (selectedFunc === 'makeItems') {
@@ -213,7 +221,7 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto }) => {
         if (funcParams.option === 'mineral') return metadata.consts?.ProductMineralKeys || {}
         if (funcParams.option === 'events') return metadata.consts?.EventKeys || {}
         if (funcParams.option === 'goods') return metadata.consts?.ProductKeys || {}
-        if ( funcParams.option === 'other') return metadata.consts?.OtherKeys || {}
+        if (funcParams.option === 'other') return metadata.consts?.OtherKeys || {}
         return metadata.consts?.ProductKeys || {}
       }
       const productOptions = productKeysForOption()
@@ -239,15 +247,15 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto }) => {
             <Form.Item label="Số lượng bán">
               <Space>
                 <InputNumber min={1} value={funcParams.value} onChange={(v) => setFuncParams({ ...funcParams, value: v })} />
-                  {(() => {
-                    const checked = typeof funcParams.advertise === 'undefined' ? true : !!funcParams.advertise
-                    return (
-                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                        <input type="checkbox" checked={checked} onChange={(e) => setFuncParams({ ...funcParams, advertise: e.target.checked })} />
-                        <span>Quảng cáo</span>
-                      </label>
-                    )
-                  })()}
+                {(() => {
+                  const checked = typeof funcParams.advertise === 'undefined' ? true : !!funcParams.advertise
+                  return (
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      <input type="checkbox" checked={checked} onChange={(e) => setFuncParams({ ...funcParams, advertise: e.target.checked })} />
+                      <span>Quảng cáo</span>
+                    </label>
+                  )
+                })()}
               </Space>
             </Form.Item>
           </Col>
@@ -266,7 +274,13 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto }) => {
           <Option value="vp">VP</Option>
           <Option value="tree">Tree</Option>
           <Option value="event">Event</Option>
+          <Option value="other">Other</Option>
         </Select>
+        <Space>
+          <span>Order:</span>
+          <InputNumber value={order} onChange={setOrder} />
+          <Checkbox checked={recommend} onChange={(e) => setRecommend(e.target.checked)}>Recommend</Checkbox>
+        </Space>
         <div>
           <span>Bán sau khi chạy  </span>
           <InputNumber min={1} max={9999} value={loopCount} onChange={(v) => setLoopCount(v)} />
@@ -287,7 +301,7 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto }) => {
                     type={selectedFunc === func ? 'primary' : 'default'}
                     onClick={() => {
                       setSelectedFunc(func)
-                        console.log('Select function clicked:', func, 'current funcParams:', funcParams)
+                      console.log('Select function clicked:', func, 'current funcParams:', funcParams)
                       if (func === 'sellItems') {
                         setFuncParams((prev) => ({
                           ...prev,

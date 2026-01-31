@@ -1,9 +1,0 @@
-9:33:22 PM : autoTool error: invalid session id: WebDriverError: A session is either terminated or not started when running "screenshot" with method "GET"
-9:36:00 PM : 9:36:00 PM : autoTool error: TypeError [ERR_INVALID_ARG_TYPE]: The "data" argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received an instance of Error
-9:36:03 PM : 9:36:03 PM : autoTool error: TypeError [ERR_INVALID_ARG_TYPE]: The "data" argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received an instance of Error
-9:36:07 PM : 9:36:07 PM : autoTool error: TypeError [ERR_INVALID_ARG_TYPE]: The "data" argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received an instance of Error
-9:36:10 PM : 9:36:10 PM : autoTool error: TypeError [ERR_INVALID_ARG_TYPE]: The "data" argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received an instance of Error
-9:36:13 PM : autoTool error: invalid session id: WebDriverError: A session is either terminated or not started when running "execute/sync" with method "POST" and args "mobile:clickGesture"
-10:14:10 PM : 10:14:10 PM : autoTool error: TypeError [ERR_INVALID_ARG_TYPE]: The "data" argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received an instance of Error
-10:14:14 PM : autoTool error: invalid session id: WebDriverError: A session is either terminated or not started when running "execute/sync" with method "POST" and args "mobile:clickGesture"
-10:49:34 PM : autoTool error: invalid session id: WebDriverError: A session is either terminated or not started when running "execute/sync" with method "POST" and args "mobile:swipeGesture"

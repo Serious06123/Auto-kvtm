@@ -4,7 +4,7 @@
             "key": "tree-dua-hau",
             "name": "Cào dưa hấu",
             "disabled": false,
-            "order": 1,
+            "order": 0,
             "recommend": false,
             "category": "tree"
         },
@@ -236,8 +236,8 @@
             "name": "chuyenbo",
             "disabled": false,
             "order": 0,
-            "recommend": false,
-            "category": "event"
+            "recommend": true,
+            "category": "other"
         }
     ]
 }
