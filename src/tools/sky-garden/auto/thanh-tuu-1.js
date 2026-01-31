@@ -1,9 +1,33 @@
-const core = require('../core')
-const { FriendHouseList } = require('../const')
+const core = require('../core');
+const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralKeys } = require('../const')
 
-// TT - Gặp Nhau Mỗi Ngày
+const produceItems = async (driver, isLast, mutex) => {
+  for (let i = 0; i < FriendHouseList.length; i++) {
+          await core.goFriendHouse(driver, i)
+      }
+  if (!isLast) {
+    await driver.sleep(8)
+  }
+}
+
+const sellItems = async (driver, mutex, mutex2, removeItems = false) => {
+  // Sell Goods
+  await core.sellItems(driver, SellItemOptions.goods, [{ key: ProductKeys.traHoaHong, value: 20 }], mutex, mutex2 , removeItems)
+}
+
+// auto generated
 module.exports = async (driver, gameOptions) => {
-    for (let i = 0; i < FriendHouseList.length; i++) {
-        await core.goFriendHouse(driver, i)
-    }
+  const { sellItems: sell } = gameOptions;
+  const { removeItems: removeItems } = gameOptions;
+  let mutex = { value: 0 };
+  let mutex2 = { value: 0 };
+  for (let i = 0; i < 1; i++) {
+    if (mutex.value != 1) {
+      await produceItems(driver, i == 0, mutex);
+    } 
+  }
+
+  if (sell) {
+    await sellItems(driver, mutex, mutex2, removeItems)
+  }
 }

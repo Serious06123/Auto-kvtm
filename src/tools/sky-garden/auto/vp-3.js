@@ -1,6 +1,6 @@
 // vp.js
 const core = require('../core');
-const { SellItemOptions, ProductKeys, TreeKeys } = require('../const');
+const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralKeys } = require('../const');
 
 
 const produceItems = async (driver, isLast, mutex) => {

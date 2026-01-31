@@ -1,5 +1,5 @@
 const core = require('../core')
-const { SellItemOptions, ProductKeys, TreeKeys } = require('../const')
+const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralKeys } = require('../const')
 const produceItems = async (driver, isLast, mutex) => {
   await core.goUp(driver)
   await core.makeItems(driver, 1, 0, 6, mutex) // sx hoa hong say

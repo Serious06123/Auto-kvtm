@@ -157,15 +157,27 @@ const ItemKeys = {
 }
 
 const TreeKeys = {
-    tao: 'tao',
-    hong: 'hong',
-    chanh: 'chanh',
-    tuyet: 'tuyet',
-    bong: 'bong',
-    oaiHuong: 'oai-huong',
-    dua: 'dua',
-    duaHau: 'dua-hau',
-    caysao : 'su-kien'
+    tao: 'cay-tao',
+    hong: 'cay-hong',
+    chanh: 'cay-chanh',
+    tuyet: 'cay-tuyet',
+    bong: 'cay-bong',
+    oaiHuong: 'cay-oai-huong',
+    dua: 'cay-dua',
+    duaHau: 'cay-dua-hau',
+    caysao : 'cay-su-kien',
+    nho : 'cay-nho',
+    lai : 'cay-lai',
+    sen : 'cay-sen',
+    mit : 'cay-mit',
+    cuc : 'cay-cuc',
+    vietquat : 'cay-viet-quat',
+    huongduong : 'cay-huong-duong',
+    tra : 'cay-tra',
+    bi : 'cay-bi',
+    dau : 'cay-dau',
+    duas : 'cay-duas',
+    
 }
 
 const BugKeys = {
@@ -190,7 +202,50 @@ const ProductKeys = {
     nuocHoaHoaHong : 'nuoc-hoa-hoa-hong',
     nuoctao : 'nuoc-tao',
     duaHau : 'p-dua-hau',
-    
+}
+
+const ProductTreeKeys = {
+    dua : 'p-dua',
+    chanh : 'p-chanh',
+    tuyet : 'p-tuyet',
+    tao : 'p-tao',
+    hong : 'p-hong',
+    oaiHuong : 'p-oai-huong',
+    bong : 'p-bong',
+    bi : 'p-bi',
+    cuc : 'p-cuc',
+    vietquat : 'p-viet-quat',
+    nho : 'p-nho',
+    lai : 'p-lai',
+    sen : 'p-sen',
+    huongduong : 'p-huong-duong',
+    tra : 'p-tra',
+    xoai : 'p-xoai',
+    mit : 'p-mit',
+    duas : 'p-duas',
+    duahau : 'p-dua-hau',
+    dau : 'p-dau',
+}
+
+const ProductMineralKeys = {
+    thoidong : 'm-thoi-dong',
+    thoivang : 'm-thoi-vang',
+    thoibac : 'm-thoi-bac',
+    thoibachkim : 'm-thoi-bach-kim',
+}
+
+const OtherKeys = {
+    vottrang : 'k3-vot-trang',
+    votxanh : 'k3-vot-xanh',
+    keodanmay : 'k3-keo-dan-may',
+    nuocthan : 'k3-nuoc-than',
+    dinh : 'k3-dinh',
+    go : 'k3-go',
+    da : 'k3-da',
+    sondo : 'k3-son-do',
+    sonvang : 'k3-son-vang',
+    sat : 'k3-sat',
+    gach : 'k3-gach',
 }
 
 const EventKeys = {
@@ -249,5 +304,7 @@ module.exports = {
     FriendHouseList,
     SlotPositions,
     BugKeys,
-
+    ProductTreeKeys,
+    ProductMineralKeys,
+    OtherKeys,
 }

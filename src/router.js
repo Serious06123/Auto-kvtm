@@ -2,6 +2,7 @@ const { Router } = require('express')
 const router = Router()
 
 const { getSettings, getGameOptions, getListGameOptions } = require('./api/settings')
+const { getMetadata, createAuto, readAuto, updateAuto } = require('./api/createAuto')
 const { getRunningDevice, viewCurrentScreenDevice } = require('./api/device')
 const { startAuto, stopAuto, stopAllAuto } = require('./api/auto')
 const { getLogs, clearLogs } = require('./api/logs')
@@ -24,6 +25,10 @@ router.get('/viewDevice', viewCurrentScreenDevice)
 router.post('/start', startAuto)
 router.post('/stop', stopAuto)
 router.post('/stopAll', stopAllAuto)
+router.get('/autoMetadata', getMetadata)
+router.post('/createAuto', createAuto)
+router.get('/readAuto', readAuto)
+router.post('/updateAuto', updateAuto)
 
 // logs api
 router.get('/logs', getLogs)

@@ -40,6 +40,10 @@ function writeDeviceData(object) {
     fs.writeFileSync(filePath.device, JSON.stringify(object))
 }
 
+function writeAutoData(object) {
+    fs.writeFileSync(filePath.auto, JSON.stringify(object, null, 4))
+}
+
 module.exports = {
     getLogData,
     clearLogData,
@@ -49,4 +53,5 @@ module.exports = {
     readFileData,
     writeLogData,
     writeDeviceData,
+    writeAutoData,
 }

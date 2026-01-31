@@ -1,0 +1,20 @@
+2026-01-25 21:10:10:004 [AndroidUiautomator2Driver@abcd] The following provided capabilities were not recognized by this driver:
+2026-01-25 21:10:10:005 [AndroidUiautomator2Driver@abcd]   disableAndroidWatchers
+2026-01-25 21:10:10:005 [AndroidUiautomator2Driver@abcd]   sessionOverride
+2026-01-25 21:10:10:005 [AndroidUiautomator2Driver@abcd]   resetKeyboard
+2026-01-25 21:10:10:005 [AndroidUiautomator2Driver@abcd]   logLevel
+2026-01-25 21:35:55:392 [AndroidUiautomator2Driver@20c7] The following provided capabilities were not recognized by this driver:
+2026-01-25 21:35:55:394 [AndroidUiautomator2Driver@20c7]   disableAndroidWatchers
+2026-01-25 21:35:55:394 [AndroidUiautomator2Driver@20c7]   sessionOverride
+2026-01-25 21:35:55:394 [AndroidUiautomator2Driver@20c7]   resetKeyboard
+2026-01-25 21:35:55:394 [AndroidUiautomator2Driver@20c7]   logLevel
+2026-01-25 22:14:05:777 [AndroidUiautomator2Driver@efcb] The following provided capabilities were not recognized by this driver:
+2026-01-25 22:14:05:778 [AndroidUiautomator2Driver@efcb]   disableAndroidWatchers
+2026-01-25 22:14:05:778 [AndroidUiautomator2Driver@efcb]   sessionOverride
+2026-01-25 22:14:05:778 [AndroidUiautomator2Driver@efcb]   resetKeyboard
+2026-01-25 22:14:05:778 [AndroidUiautomator2Driver@efcb]   logLevel
+2026-01-25 22:16:57:170 [AndroidUiautomator2Driver@b173] The following provided capabilities were not recognized by this driver:
+2026-01-25 22:16:57:170 [AndroidUiautomator2Driver@b173]   disableAndroidWatchers
+2026-01-25 22:16:57:170 [AndroidUiautomator2Driver@b173]   sessionOverride
+2026-01-25 22:16:57:170 [AndroidUiautomator2Driver@b173]   resetKeyboard
+2026-01-25 22:16:57:170 [AndroidUiautomator2Driver@b173]   logLevel

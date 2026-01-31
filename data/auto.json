@@ -1,28 +1,12 @@
 {
     "sky-garden": [
         {
-            "key": "testbando",
-            "name": "Test ban do",
-            "disabled": false,
-            "order": 1,
-            "recommend": false,
-            "category" : "vp"
-        },
-        {
-            "key": "test-sk",
-            "name": "Test su kien",
-            "disabled": false,
-            "order": 1,
-            "recommend": false,
-            "category" : "tree"
-        },
-        {
             "key": "tree-dua-hau",
             "name": "Cào dưa hấu",
             "disabled": false,
             "order": 1,
             "recommend": false,
-            "category" : "tree"
+            "category": "tree"
         },
         {
             "key": "vp-1",
@@ -30,7 +14,7 @@
             "disabled": false,
             "order": 1,
             "recommend": false,
-            "category" : "vp"
+            "category": "vp"
         },
         {
             "key": "vp-8",
@@ -38,7 +22,7 @@
             "disabled": false,
             "order": 0,
             "recommend": false,
-            "category" : "vp"
+            "category": "vp"
         },
         {
             "key": "vp-9",
@@ -46,7 +30,7 @@
             "disabled": false,
             "order": 0,
             "recommend": false,
-            "category" : "vp"
+            "category": "vp"
         },
         {
             "key": "vp-10",
@@ -54,7 +38,7 @@
             "disabled": false,
             "order": 0,
             "recommend": false,
-            "category" : "vp"
+            "category": "vp"
         },
         {
             "key": "vp-2",
@@ -62,7 +46,7 @@
             "disabled": false,
             "order": 1,
             "recommend": false,
-            "category" : "vp"
+            "category": "vp"
         },
         {
             "key": "vp-3",
@@ -70,7 +54,7 @@
             "disabled": false,
             "order": 2,
             "recommend": false,
-            "category" : "vp"
+            "category": "vp"
         },
         {
             "key": "trong-cay-sk",
@@ -173,7 +157,7 @@
             "disabled": false,
             "order": 2,
             "recommend": false,
-            "category" : "vp"
+            "category": "vp"
         },
         {
             "key": "vp-5",
@@ -181,7 +165,7 @@
             "disabled": false,
             "order": 0,
             "recommend": true,
-            "category" : "vp"
+            "category": "vp"
         },
         {
             "key": "vp-6",
@@ -189,7 +173,7 @@
             "disabled": false,
             "order": 1,
             "recommend": false,
-            "category" : "vp"
+            "category": "vp"
         },
         {
             "key": "chuyen-vpsk-kinh",
@@ -221,7 +205,7 @@
             "disabled": false,
             "order": 1,
             "recommend": false,
-            "category" : "vp"
+            "category": "vp"
         },
         {
             "key": "bat-ong",
@@ -229,7 +213,7 @@
             "disabled": false,
             "order": 1,
             "recommend": false,
-            "category" : "Bọ"
+            "category": "Bọ"
         },
         {
             "key": "bat-buom",
@@ -237,7 +221,7 @@
             "disabled": false,
             "order": 1,
             "recommend": false,
-            "category" : "Bọ"
+            "category": "Bọ"
         },
         {
             "key": "bat-chuon",
@@ -245,15 +229,15 @@
             "disabled": false,
             "order": 1,
             "recommend": false,
-            "category" : "Bọ"
+            "category": "Bọ"
         },
         {
-            "key": "test",
-            "name": "Test",
+            "key": "vpskbo",
+            "name": "chuyenbo",
             "disabled": false,
-            "order": 1,
+            "order": 0,
             "recommend": false,
-            "category" : "tree"
+            "category": "event"
         }
     ]
 }

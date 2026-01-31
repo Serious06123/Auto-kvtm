@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Checkbox, Col, Row, Select, Button, InputNumber, Flex } from 'antd'
 import * as styles from './SkyGarden.module.css'
 import axios from 'axios'
+import CreateAutoModal from './CreateAutoModal'
 
 const CATS = ['tree', 'vp', 'event'];
 
@@ -28,6 +29,8 @@ const SkyGarden = (props) => {
   const [quantity, setQuantity] = useState(9999)
   const [gameOption, setGameOption] = useState(['sellItems', 'openChests', 'openGame'])
   const [autoOption, setAutoOption] = useState([])
+  const [createOpen, setCreateOpen] = useState(false)
+  const [editingAuto, setEditingAuto] = useState(null)
 
   useEffect(() => {
     axios.get(`/api/gameOptions?game=${selectedGame}`).then(({ data }) => {
@@ -186,6 +189,22 @@ const SkyGarden = (props) => {
                 <Button type="primary" onClick={runAuto} disabled={!selectedAuto}>
                   Run now!
                 </Button>
+                <Button style={{ marginLeft: 8 }} onClick={() => { setEditingAuto(null); setCreateOpen(true); }}>
+                  Create Auto
+                </Button>
+                <Button style={{ marginLeft: 8 }} onClick={async () => {
+                  if (!selectedAuto) return alert('Please select an auto to edit')
+                  try {
+                    const r = await axios.get(`/api/readAuto?key=${selectedAuto}`)
+                    setEditingAuto(r.data)
+                    setCreateOpen(true)
+                  } catch (e) {
+                    alert('Cannot read auto: ' + (e.message || ''))
+                  }
+                }} disabled={!selectedAuto}>
+                  Edit Auto
+                </Button>
+                <CreateAutoModal open={createOpen} editingAuto={editingAuto} onClose={(refresh) => { setCreateOpen(false); setEditingAuto(null); if (refresh) axios.get(`/api/gameOptions?game=${selectedGame}`).then(({ data }) => { const sorted = data.map(normalizeCategory).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)); setAutoOption(sorted); }) }} selectedGame={selectedGame} />
               </Col>
             </Row>
           </Checkbox.Group>

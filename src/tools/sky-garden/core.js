@@ -17,9 +17,13 @@ const {
     ThirdRowSlotList,
     FourthRowSlotList,
     BugKeys,
+    ProductTreeKeys,
+    ProductMineralKeys,
+    OtherKeys,
 } = require('./const')
 
 const { resolve } = require('path')
+const { is } = require('bluebird')
 const openGame = async (driver) => {
     await driver.press(KeyCode.HOME)
     await driver.closeApp(ItemKeys.gameId)
@@ -296,7 +300,7 @@ const findTreeOnScreen = async (driver, treeKey, isFindNext = true) => {
     let slotItem = await driver.getCoordinateItemOnScreen(_getItemPath(treeKey), SlotPositions.caytrong)
     let retryCount = 0
     while (!slotItem && retryCount++ < 5) {
-        isFindNext ? await driver.tap(42.2, 85) : await driver.tap(16.5, 84.3)
+        isFindNext ? await driver.tap(42.2, 85.2) : await driver.tap(16.5, 84.3)
         await driver.sleep(0.2)
         slotItem = await driver.getCoordinateItemOnScreen(_getItemPath(treeKey), SlotPositions.caytrong)
     }
@@ -424,7 +428,7 @@ const makeItems = async (driver, floor = 1, slot = 0, number = 1, mutex) => {
 
 };
 
-const sellItems = async (driver, option, items, mutex, mutex2, removeItems = false, loop = false) => {
+const sellItems = async (driver, option, items, mutex, mutex2, removeItems = false, isAds = true, loop = false) => {
     if (mutex2.value >= items.value) {
         mutex.value = 0
         return
@@ -484,7 +488,7 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
             await driver.tap(option_x, option_y)
             await driver.sleep(0.3)
             if (await driver.tapItemOnScreen(_getItemPath(itemId), SlotPositions.bando)) {
-                await _sell(driver)
+                await _sell(driver , isAds)
                 itemId = _getItemId(items)
                 mutex2.value++
             }
@@ -505,7 +509,7 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
             await driver.sleep(0.3)
             // choose item by image
             if ((await driver.tapItemOnScreen(_getItemPath(itemId), SlotPositions.bando))) {
-                await _sell(driver)
+                await _sell(driver , isAds)
                 itemId = _getItemId(items)
                 mutex2.value++
             }
@@ -518,9 +522,10 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
             continue
         }
         // click ads
+        // loop la muon ban du so luong , mutex2 la khi kho da day
         if (loop || cnt == mutex2.value) {
             var chuaqc = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.chuaqc))
-            if (chuaqc) {
+            if (chuaqc && isAds) {
                 await driver.tap(chuaqc.x, chuaqc.y)
                 await driver.sleep(0.5)
                 await driver.tap(50.0, 73.4)
@@ -738,11 +743,11 @@ const _getItemId = (items) => {
 const _sell = async (driver, isAds = true) => {
     await driver.sleep(0.2)
     // increase price
-    for (let i = 0; i < 10; i++) {
-        await driver.tap(85.0, 54.1)
-        await driver.sleep(DelayTime)
-    }
-    await driver.sleep(0.2)
+    // for (let i = 0; i < 10; i++) {
+    //     await driver.tap(85.0, 54.1)
+    //     await driver.sleep(DelayTime)
+    // }
+    // await driver.sleep(0.2)
     // stop increase price
     if (!isAds) {
         // disable ads
