@@ -441,17 +441,14 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
     await driver.tap(64.3, 85.5)
     await driver.sleep(1)
 
-    // back front market
     await driver.action([
-        { duration: 0, x: 17.2, y: 54.9 },
-        { duration: 200, x: 78.75, y: 54.9 },
+        { duration: 0, x: 74.4, y: 54.9 },
+        { duration: 200, x: 17.2, y: 54.9 },
     ])
     await driver.sleep(0.2)
-
-    // back front market
     await driver.action([
-        { duration: 0, x: 22.3, y: 54.0 },
-        { duration: 200, x: 75.5, y: 54.0 },
+        { duration: 0, x: 74.4, y: 54.9 },
+        { duration: 200, x: 17.2, y: 54.9 },
     ])
     // buy all items
     let itemId = _getItemId(items)
@@ -525,12 +522,14 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
         // loop la muon ban du so luong , mutex2 la khi kho da day
         if (loop || cnt == mutex2.value) {
             var chuaqc = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.chuaqc))
-            if (chuaqc && isAds) {
-                await driver.tap(chuaqc.x, chuaqc.y)
-                await driver.sleep(0.5)
-                await driver.tap(50.0, 73.4)
-                await driver.sleep(0.5)
-                await driver.tap(62.5, 27.0)
+            if (chuaqc) {
+                if (isAds) {
+                    await driver.tap(chuaqc.x, chuaqc.y)
+                    await driver.sleep(0.5)
+                    await driver.tap(50.0, 70.1)
+                    await driver.sleep(0.5)
+                    await driver.tap(60.5, 30.3)
+                }
                 cnt--
             }
         }
@@ -547,7 +546,7 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
         count++
         if (count > 2) {
             if (mutex.value == 1) {
-                return await sellItems(driver, option, items, mutex, mutex2, removeItems)
+                return await sellItems(driver, option, items, mutex, mutex2, removeItems, isAds)
             }
             if (!loop) break
             continue
@@ -680,8 +679,8 @@ const makeEvents = async (driver) => {
         }
         for (let i = 0; i < 2; i++) {
             await driver.action([
-                { duration: 0, x: 78.75, y: 54.9 },
-                { duration: 200, x: 14.75, y: 54.9 },
+                { duration: 0, x: 14.75, y: 54.9 },
+                { duration: 200, x: 78.75, y: 54.9 },
             ])
         }
         await driver.sleep(1)

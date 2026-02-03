@@ -3,7 +3,18 @@ const path = require('path')
 const { runExecAsync, runSpawn } = require('../helper/shell')
 const { logErrMsg } = require('../services/log')
 
-const adbPath = path.join(__dirname, '../../../bin/platform-tools/adb.exe')
+const getAdbPath = () => {
+    const platform = process.platform;
+    if (platform === 'win32') {
+        return path.join(__dirname, '../../../bin/platform-tools/adb.exe')
+    } else if (platform === 'darwin') {
+        return path.join(__dirname, '../../../bin/platform-tools/adb-mac') // Rename your mac binary to this
+    } else {
+        return path.join(__dirname, '../../../bin/platform-tools/adb-linux') // Rename your linux binary to this
+    }
+}
+
+const adbPath = getAdbPath()
 
 const getDeviceNameById = async (deviceId) => {
     if (!deviceId.includes("emulator")) return deviceId
