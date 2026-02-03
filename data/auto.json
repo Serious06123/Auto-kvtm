@@ -5,7 +5,7 @@
             "name": "Cào dưa hấu",
             "disabled": false,
             "order": 0,
-            "recommend": false,
+            "recommend": true,
             "category": "tree"
         },
         {
@@ -237,6 +237,46 @@
             "disabled": false,
             "order": 0,
             "recommend": true,
+            "category": "other"
+        },
+        {
+            "key": "test-bo",
+            "name": "test-bo",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category": "other"
+        },
+        {
+            "key": "tree-tra",
+            "name": "cao tra",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category": "tree"
+        },
+        {
+            "key": "test-cuu",
+            "name": "test-cuu",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category": "other"
+        },
+        {
+            "key": "test-heo",
+            "name": "test-heo",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category": "other"
+        },
+        {
+            "key": "test-ga",
+            "name": "test-ga",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
             "category": "other"
         }
     ]
