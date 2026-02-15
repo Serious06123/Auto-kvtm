@@ -150,7 +150,8 @@ const ItemKeys = {
     chuaqc: 'chua-qc',
     votxanh: 'vot-xanh',
     xoavp: 'xoa-vp',
-    dongy: 'dongy',
+    dongy: 'dong-y',
+    dongy2: 'dong-y-2',
     chuachon: 'chua-chon',
 
 }

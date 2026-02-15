@@ -1,0 +1,5 @@
+2026-02-15 11:30:44:306 [AndroidUiautomator2Driver@f928] The following provided capabilities were not recognized by this driver:
+2026-02-15 11:30:44:307 [AndroidUiautomator2Driver@f928]   disableAndroidWatchers
+2026-02-15 11:30:44:307 [AndroidUiautomator2Driver@f928]   sessionOverride
+2026-02-15 11:30:44:307 [AndroidUiautomator2Driver@f928]   resetKeyboard
+2026-02-15 11:30:44:307 [AndroidUiautomator2Driver@f928]   logLevel

@@ -1,15 +1,14 @@
-
 const core = require('../core')
-const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralKeys, OtherKeys, EventKeys } = require('../const')
+const { SellItemOptions, ProductKeys, TreeKeys , ProductTreeKeys, ProductMineralKeys ,OtherKeys, EventKeys } = require('../const')
 
 const produceItems = async (driver, isLast, mutex) => {
-  await core.goUp(driver)
+  await core.goUp(driver, 1)
   await core.makeItems(driver, 1, 0, 6, mutex) // sx hong say
   await core.makeItems(driver, 2, 1, 6, mutex) // sx nuoc tuyet
   await core.goUp(driver, 2)
   await core.makeItems(driver, 1, 0, 6, mutex) // sx vai do
   await core.goDownLast(driver)
-  await core.goUp(driver)
+  await core.goUp(driver, 1)
   await core.plantTrees(driver, mutex, TreeKeys.hong, 3, 5)
   await driver.sleep(9)
   await core.harvestTrees(driver, mutex, 3, 5)
@@ -21,31 +20,30 @@ const produceItems = async (driver, isLast, mutex) => {
   await core.harvestTrees(driver, mutex, 4, 5)
   await core.goDownLast(driver)
   if (!isLast) {
-    await driver.sleep(1);
+    await driver.sleep(8)
   }
 }
 
-const sellItems = async (driver, mutex, mutex2, removeItems = false) => {
+const sellItems = async (driver, mutex, mutex2, removeItems = false, quantity = 0) => {
   // Sell Goods
-
   await core.sellItems(driver, SellItemOptions.goods, [{ key: ProductKeys.nuocTuyet, value: 20 }], mutex, mutex2, removeItems, true)
   await core.sellItems(driver, SellItemOptions.goods, [{ key: ProductKeys.vaiDo, value: 20 }], mutex, mutex2, removeItems, true)
 }
 
-
-// vai do
+// auto generated
 module.exports = async (driver, gameOptions) => {
   const { sellItems: sell } = gameOptions;
   const { removeItems: removeItems } = gameOptions;
+  const { quantity } = gameOptions;
   let mutex = { value: 0 };
   let mutex2 = { value: 0 };
   for (let i = 0; i < 4; i++) {
     if (mutex.value != 1) {
       await produceItems(driver, i == 3, mutex);
-    }
+    } 
   }
 
   if (sell) {
-    await sellItems(driver, mutex, mutex2, removeItems)
+    await sellItems(driver, mutex, mutex2, removeItems, quantity)
   }
 }

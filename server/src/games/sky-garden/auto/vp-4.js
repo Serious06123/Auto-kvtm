@@ -2,24 +2,22 @@
 const core = require('../core');
 const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralKeys, OtherKeys, EventKeys } = require('../const')
 
-let slotTree1, slotTree2, count = 0;
-
 const produceItems = async (driver, isLast, mutex) => {
   await core.goUp(driver, 5);
   await core.makeItems(driver, 1, 0, 3, mutex); // sx tinh dau hoa hong
   await core.goDownLast(driver);
-  await core.goUp(driver);
-  await core.plantTrees(driver, mutex, slotTree1, 2, 5) // trong tuyet
+  await core.goUp(driver, 1);
+  await core.plantTrees(driver, mutex, TreeKeys.tuyet, 2, 5) // trong tuyet
   await core.goUp(driver, 4)
-  await core.plantTrees(driver, mutex, slotTree2, 3, 2) // trong hong
+  await core.plantTrees(driver, mutex, TreeKeys.hong, 3, 2) // trong hong
   await core.goDownLast(driver);
-  await core.goUp(driver);
+  await core.goUp(driver, 1);
   await driver.sleep(1);
-  await core.harvestTrees(driver, mutex);
+  await core.harvestTrees(driver, mutex, 4, 5);
   await core.goUp(driver, 4);
-  await core.harvestTrees(driver, mutex);
+  await core.harvestTrees(driver, mutex, 4, 5);
   await core.goDownLast(driver);
-  await core.goUp(driver);
+  await core.goUp(driver, 1);
   if (!isLast) {
     await driver.sleep(1);
   }
@@ -27,10 +25,9 @@ const produceItems = async (driver, isLast, mutex) => {
 
 
 const sellItems = async (driver, mutex, mutex2, removeItems = false) => {
-  // Sell Goods đúng món ngẫu nhiên
+  // Sell Goods
   await core.sellItems(driver, SellItemOptions.goods, [{ key: ProductKeys.tinhDauHoaHong, value: 20 }], mutex, mutex2, removeItems, true)
-};
-
+}
 
 // auto generated
 module.exports = async (driver, gameOptions) => {

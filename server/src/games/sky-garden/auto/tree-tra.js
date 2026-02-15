@@ -1,5 +1,5 @@
 const core = require('../core')
-const { SellItemOptions, ProductKeys, TreeKeys , ProductTreeKeys, ProductMineralKeys ,OtherKeys, EventKeys } = require('../const')
+const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralKeys, OtherKeys, EventKeys } = require('../const')
 
 const produceItems = async (driver, isLast, mutex) => {
   await core.goUp(driver, 1)
@@ -33,7 +33,7 @@ module.exports = async (driver, gameOptions) => {
   for (let i = 0; i < 10; i++) {
     if (mutex.value != 1) {
       await produceItems(driver, i == 9, mutex);
-    } 
+    }
   }
 
   if (sell) {

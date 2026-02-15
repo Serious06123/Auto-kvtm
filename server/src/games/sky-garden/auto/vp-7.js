@@ -2,19 +2,17 @@ const core = require('../core')
 const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralKeys, OtherKeys, EventKeys } = require('../const')
 
 const produceItems = async (driver, isLast, mutex) => {
-  await core.goUp(driver)
+  await core.goUp(driver, 1)
   await core.makeItems(driver, 1, 0, 6, mutex) // sx hong say
   await core.goUp(driver, 2)
   await core.makeItems(driver, 1, 0, 6, mutex) // sx vai do
   await core.goDownLast(driver)
-  await core.goUp(driver)
-  // thu hoach 1
+  await core.goUp(driver, 1)
   await core.plantTrees(driver, mutex, TreeKeys.hong, 3, 5)
   await core.harvestTrees(driver, mutex, 3, 5)
   await core.plantTrees(driver, mutex, TreeKeys.bong, 3, 5)
   await core.harvestTrees(driver, mutex, 3, 5)
   await core.goDownLast(driver)
-  // thu hoach 2
   if (!isLast) {
     await driver.sleep(9)
   }

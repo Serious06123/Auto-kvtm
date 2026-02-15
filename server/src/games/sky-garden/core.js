@@ -34,8 +34,20 @@ const openGame = async (driver) => {
 
     let gamePosition = null
     let count = 0
-
+    let tk = null
     await driver.tap(85.9, 91.9)
+    while (!tk && count < 10) {
+        tk = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.dangnhap), SlotPositions.p3p4)
+        if (tk) {
+            await driver.tap(tk.x, tk.y)
+            await driver.sleep(1)
+            break
+        }
+        await driver.tap(97.1, 97.1)
+        await driver.sleep(1)
+        await driver.tap(85.9, 91.9)
+        count++
+    }
     count = 0
     while (!gamePosition) {
         if (count > 20) break;
@@ -442,13 +454,13 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
     await driver.sleep(1)
 
     await driver.action([
-        { duration: 0, x: 74.4, y: 54.9 },
-        { duration: 200, x: 17.2, y: 54.9 },
+        { duration: 0, x: 23.8, y: 54.9 },
+        { duration: 300, x: 74.4, y: 54.9 },
     ])
     await driver.sleep(0.2)
     await driver.action([
-        { duration: 0, x: 74.4, y: 54.9 },
-        { duration: 200, x: 17.2, y: 54.9 },
+        { duration: 0, x: 23.8, y: 54.9 },
+        { duration: 300, x: 74.4, y: 54.9 },
     ])
     // buy all items
     let itemId = _getItemId(items)
@@ -457,24 +469,6 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
         if (mutex2.value >= items.value - 1) {
             mutex.value = 0
             break;
-        }
-        if (mutex.value == 1 && removeItems) {
-            await driver.tapItemOnScreen(_getItemPath(ItemKeys.chuaqc), SlotPositions.quayhang)
-            await driver.sleep(0.2)
-            if ((await driver.tapItemOnScreen(_getItemPath(ItemKeys.xoavp), SlotPositions.quayhang))) {
-                await driver.sleep(0.2)
-                await driver.tap(50.6, 61.6)
-            }
-            else {
-                if ((await driver.haveItemOnScreen(_getItemPath(ItemKeys.chuachon, SlotPositions.p2)))) {
-                    await driver.press(KeyCode.BACK);
-                }
-                else {
-                    await backToGame(driver);
-                    await driver.sleep(1);
-                    await driver.tap(66.25, 83.7)
-                }
-            }
         }
         var soldSlot = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.soldSlot), SlotPositions.quayhang)
         if (soldSlot !== null) {
@@ -490,10 +484,7 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
                 mutex2.value++
             }
             else {
-                if (!loop) break
-                await backToGame(driver);
-                await driver.sleep(1);
-                await driver.tap(66.25, 83.7)
+                break
             }
             continue
         }
@@ -511,16 +502,49 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
                 mutex2.value++
             }
             else {
-                if (!loop) break
-                await backToGame(driver);
-                await driver.sleep(1);
-                await driver.tap(66.25, 83.7)
+                break
             }
             continue
         }
+        if (removeItems) {
+            await driver.tapItemOnScreen(_getItemPath(ItemKeys.chuaqc), SlotPositions.quayhang)
+            await driver.sleep(0.4)
+            if ((await driver.tapItemOnScreen(_getItemPath(ItemKeys.xoavp), SlotPositions.quayhang))) {
+                await driver.sleep(0.3)
+                await driver.tapItemOnScreen(_getItemPath(ItemKeys.dongy2), SlotPositions.quayhang)
+                continue
+            }
+            else {
+                if ((await driver.haveItemOnScreen(_getItemPath(ItemKeys.chuachon, SlotPositions.p2)))) {
+                    await driver.press(KeyCode.BACK);
+                }
+                else {
+                    await backToGame(driver);
+                    await driver.sleep(1);
+                    await driver.tap(66.25, 83.7)
+                }
+            }
+        }
+        // if ((mutex.value == 1 && removeItems) || (mutex2.value < items.value && removeItems)) {
+        //     await driver.tapItemOnScreen(_getItemPath(ItemKeys.chuaqc), SlotPositions.quayhang)
+        //     await driver.sleep(0.2)
+        //     if ((await driver.tapItemOnScreen(_getItemPath(ItemKeys.xoavp), SlotPositions.quayhang))) {
+        //         await driver.sleep(0.2)
+        //         await driver.tap(49.3, 60.6)
+        //     }
+        //     else {
+        //         if ((await driver.haveItemOnScreen(_getItemPath(ItemKeys.chuachon, SlotPositions.p2)))) {
+        //             await driver.press(KeyCode.BACK);
+        //         }
+        //         else {
+        //             await backToGame(driver);
+        //             await driver.sleep(1);
+        //             await driver.tap(66.25, 83.7)
+        //         }
+        //     }
+        // }
         // click ads
-        // loop la muon ban du so luong , mutex2 la khi kho da day
-        if (loop || cnt == mutex2.value) {
+        if (cnt == mutex2.value) {
             var chuaqc = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.chuaqc))
             if (chuaqc) {
                 if (isAds) {
@@ -536,8 +560,8 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
         await driver.sleep(0.2)
         if (count < 2) {
             await driver.action([
-                { duration: 0, x: 80, y: 58.1 },
-                { duration: 3 * 1000, x: 20.875, y: 58.1 },
+                { duration: 0, x: 74.4, y: 54.9 },
+                { duration: 3000, x: 23.8, y: 54.9 },
             ])
         }
 
@@ -546,10 +570,9 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
         count++
         if (count > 2) {
             if (mutex.value == 1) {
-                return await sellItems(driver, option, items, mutex, mutex2, removeItems, isAds)
+                return await sellItems(driver, option, items, mutex, mutex2, removeItems, isAds, loop)
             }
-            if (!loop) break
-            continue
+            break
         }
 
     }

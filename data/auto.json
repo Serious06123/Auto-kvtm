@@ -278,6 +278,14 @@
             "order": 0,
             "recommend": false,
             "category": "other"
+        },
+        {
+            "key": "xoavp",
+            "name": "test xoa vp",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category": "other"
         }
     ]
 }
