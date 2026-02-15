@@ -34,9 +34,22 @@ const updateConstFile = (keyType, keyName, keyValue) => {
         if (closingBraceIndex !== -1) {
             // Quote keyName if it contains dashes or other special characters
             const safeKeyName = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(keyName) ? keyName : `'${keyName}'`
-            let newEntry = `    ${safeKeyName}: '${keyValue}',\n`
-            const newBlock = fullBlock.slice(0, closingBraceIndex) + newEntry + fullBlock.slice(closingBraceIndex)
-            content = content.replace(fullBlock, newBlock)
+            let newEntry = `    ${safeKeyName}: '${keyValue}',`
+
+            // Check if key already exists in the block
+            const keyRegex = new RegExp(`^\\s*${safeKeyName}\\s*:\\s*['"].*['"],?`, 'm')
+
+            if (keyRegex.test(fullBlock)) {
+                // Replace existing key
+                const newBlock = fullBlock.replace(keyRegex, newEntry)
+                content = content.replace(fullBlock, newBlock)
+            } else {
+                // Append new key
+                newEntry = `    ${safeKeyName}: '${keyValue}',\n`
+                const newBlock = fullBlock.slice(0, closingBraceIndex) + newEntry + fullBlock.slice(closingBraceIndex)
+                content = content.replace(fullBlock, newBlock)
+            }
+
             fs.writeFileSync(constFilePath, content, 'utf8')
             return true
         }

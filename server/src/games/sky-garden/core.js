@@ -20,6 +20,7 @@ const {
     ProductTreeKeys,
     ProductMineralKeys,
     OtherKeys,
+    ProductKeys,
 } = require('./const')
 
 const { resolve } = require('path')
@@ -560,7 +561,6 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
             }
             break
         }
-
     }
     await backToGame(driver)
 }

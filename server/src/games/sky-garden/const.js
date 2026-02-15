@@ -165,7 +165,6 @@ const ItemKeys = {
     bi: 'cay-bi',
     dau: 'cay-dau',
     duas: 'cay-duas',
-
 }
 
 const BugKeys = {
@@ -198,9 +197,7 @@ const ProductKeys = {
     nuocdua: 'nuoc-dua',
     taosay: 'tao-say',
     nuocmit: 'nuoc-mit',
-    hongsay: 'hong-say',
-
-    'mit-say': 'mit-say',
+    hongsay: 'hong-say',    mitsaytest: 'mit-say-test',
 }
 
 const ProductTreeKeys = {

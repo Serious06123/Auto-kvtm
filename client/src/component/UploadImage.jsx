@@ -49,6 +49,15 @@ const UploadImage = () => {
         if (Array.isArray(e)) {
             return e
         }
+
+        if (e?.fileList?.length > 0) {
+            const file = e.fileList[0]
+            if (file.name) {
+                const fileNameWithoutExt = file.name.split('.').slice(0, -1).join('.')
+                form.setFieldsValue({ value: fileNameWithoutExt })
+            }
+        }
+
         return e && e.fileList
     }
 
@@ -82,7 +91,7 @@ const UploadImage = () => {
 
                     <Form.Item
                         name="keyName"
-                        label="Key Name (Variable Name)"
+                        label="Tên (Tên viết liền không có khoảng trắng hay dấu cách '-')"
                         rules={[{ required: true, message: 'Please enter the key name!' }]}
                     >
                         <Input placeholder="e.g. myNewItem" />
