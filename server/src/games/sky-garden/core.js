@@ -506,43 +506,6 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
             }
             continue
         }
-        if (removeItems) {
-            await driver.tapItemOnScreen(_getItemPath(ItemKeys.chuaqc), SlotPositions.quayhang)
-            await driver.sleep(0.4)
-            if ((await driver.tapItemOnScreen(_getItemPath(ItemKeys.xoavp), SlotPositions.quayhang))) {
-                await driver.sleep(0.3)
-                await driver.tapItemOnScreen(_getItemPath(ItemKeys.dongy2), SlotPositions.quayhang)
-                continue
-            }
-            else {
-                if ((await driver.haveItemOnScreen(_getItemPath(ItemKeys.chuachon, SlotPositions.p2)))) {
-                    await driver.press(KeyCode.BACK);
-                }
-                else {
-                    await backToGame(driver);
-                    await driver.sleep(1);
-                    await driver.tap(66.25, 83.7)
-                }
-            }
-        }
-        // if ((mutex.value == 1 && removeItems) || (mutex2.value < items.value && removeItems)) {
-        //     await driver.tapItemOnScreen(_getItemPath(ItemKeys.chuaqc), SlotPositions.quayhang)
-        //     await driver.sleep(0.2)
-        //     if ((await driver.tapItemOnScreen(_getItemPath(ItemKeys.xoavp), SlotPositions.quayhang))) {
-        //         await driver.sleep(0.2)
-        //         await driver.tap(49.3, 60.6)
-        //     }
-        //     else {
-        //         if ((await driver.haveItemOnScreen(_getItemPath(ItemKeys.chuachon, SlotPositions.p2)))) {
-        //             await driver.press(KeyCode.BACK);
-        //         }
-        //         else {
-        //             await backToGame(driver);
-        //             await driver.sleep(1);
-        //             await driver.tap(66.25, 83.7)
-        //         }
-        //     }
-        // }
         // click ads
         if (cnt == mutex2.value) {
             var chuaqc = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.chuaqc))
@@ -569,6 +532,29 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
 
         count++
         if (count > 2) {
+            if (removeItems) {
+                while (mutex2.value < items.value) {
+                    await driver.tapItemOnScreen(_getItemPath(ItemKeys.chuaqc), SlotPositions.quayhang)
+                    await driver.sleep(0.4)
+                    if ((await driver.tapItemOnScreen(_getItemPath(ItemKeys.xoavp), SlotPositions.quayhang))) {
+                        await driver.sleep(0.3)
+                        await driver.tapItemOnScreen(_getItemPath(ItemKeys.dongy2), SlotPositions.quayhang)
+                        mutex2.value++
+                        continue
+                    }
+                    else {
+                        if ((await driver.haveItemOnScreen(_getItemPath(ItemKeys.chuachon, SlotPositions.p2)))) {
+                            await driver.press(KeyCode.BACK);
+                        }
+                        else {
+                            await backToGame(driver);
+                            await driver.sleep(1);
+                            await driver.tap(66.25, 83.7)
+                        }
+                        break
+                    }
+                }
+            }
             if (mutex.value == 1) {
                 return await sellItems(driver, option, items, mutex, mutex2, removeItems, isAds, loop)
             }

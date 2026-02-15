@@ -148,18 +148,6 @@ const ItemKeys = {
     kc: 'kc',
     fullkho: 'full-kho',
     chuaqc: 'chua-qc',
-    votxanh: 'vot-xanh',
-    xoavp: 'xoa-vp',
-    dongy: 'dong-y',
-    dongy2: 'dong-y-2',
-    chuachon: 'chua-chon',
-
-}
-
-const TreeKeys = {
-    tao: 'cay-tao',
-    hong: 'cay-hong',
-    chanh: 'cay-chanh',
     tuyet: 'cay-tuyet',
     bong: 'cay-bong',
     oaiHuong: 'cay-oai-huong',
@@ -202,6 +190,17 @@ const ProductKeys = {
     nuocHoaHoaHong: 'nuoc-hoa-hoa-hong',
     nuoctao: 'nuoc-tao',
     duaHau: 'p-dua-hau',
+    mitsay: 'mit-say',
+    trasay: 'tra-say',
+    duasay: 'dua-say',
+    oaihuongsay: 'oai-huong-say',
+    nuocduahau: 'nuoc-dua-hau',
+    nuocdua: 'nuoc-dua',
+    taosay: 'tao-say',
+    nuocmit: 'nuoc-mit',
+    hongsay: 'hong-say',
+
+    'mit-say': 'mit-say',
 }
 
 const ProductTreeKeys = {

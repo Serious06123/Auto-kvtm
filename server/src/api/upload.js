@@ -5,7 +5,7 @@ const fs = require('fs')
 // Configure multer storage
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        const uploadPath = path.resolve(__dirname, '../tools/sky-garden/item')
+        const uploadPath = path.resolve(__dirname, '../games/sky-garden/item')
         if (!fs.existsSync(uploadPath)) {
             fs.mkdirSync(uploadPath, { recursive: true })
         }
@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage })
 
 const updateConstFile = (keyType, keyName, keyValue) => {
-    const constFilePath = path.resolve(__dirname, '../tools/sky-garden/const.js')
+    const constFilePath = path.resolve(__dirname, '../games/sky-garden/const.js')
     let content = fs.readFileSync(constFilePath, 'utf8')
 
     const regex = new RegExp(`const\\s+${keyType}\\s*=\\s*{([\\s\\S]*?)}`, 'm')
