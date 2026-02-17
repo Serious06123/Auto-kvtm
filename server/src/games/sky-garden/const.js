@@ -148,6 +148,12 @@ const ItemKeys = {
     kc: 'kc',
     fullkho: 'full-kho',
     chuaqc: 'chua-qc',
+}
+
+const TreeKeys = {
+    tao: 'cay-tao',
+    hong: 'cay-hong',
+    chanh: 'cay-chanh',
     tuyet: 'cay-tuyet',
     bong: 'cay-bong',
     oaiHuong: 'cay-oai-huong',
@@ -165,6 +171,7 @@ const ItemKeys = {
     bi: 'cay-bi',
     dau: 'cay-dau',
     duas: 'cay-duas',
+
 }
 
 const BugKeys = {
@@ -197,7 +204,8 @@ const ProductKeys = {
     nuocdua: 'nuoc-dua',
     taosay: 'tao-say',
     nuocmit: 'nuoc-mit',
-    hongsay: 'hong-say',    mitsaytest: 'mit-say-test',
+    hongsay: 'hong-say',
+    mitsaytest: 'mit-say-test',
 }
 
 const ProductTreeKeys = {
