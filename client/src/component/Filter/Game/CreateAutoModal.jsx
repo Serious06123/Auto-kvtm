@@ -35,7 +35,7 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto }) => {
       setOrder(editingAuto.order || 0)
       setRecommend(editingAuto.recommend || false)
       setLoopCount(editingAuto.loopCount || 5)
-      setSleepSeconds(editingAuto.sleepSeconds || 8)
+      setSleepSeconds(editingAuto.sleepSeconds ?? 8)
       setLogic((editingAuto.logic && editingAuto.logic.production ? editingAuto.logic.production.join('\n') : '') || '')
       const sellLines = (editingAuto.logic && editingAuto.logic.sell) || []
       const filtered = sellLines

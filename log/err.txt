@@ -1,0 +1,1 @@
+6:30:52 PM : autoTool error: invalid session id: WebDriverError: A session is either terminated or not started when running "execute/sync" with method "POST" and args "mobile:clickGesture"
