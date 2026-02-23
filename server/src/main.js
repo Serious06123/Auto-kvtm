@@ -1,5 +1,6 @@
 const express = require('express')
 const router = require('./router')
+const { initOCR } = require('./utils/ocr')
 const { getLiveScreen } = require('./websocket')
 const { join } = require('path')
 const { clearErrMsg, clearInfoMsg, logErrMsg } = require('./services/log')
@@ -26,8 +27,11 @@ app.use((err, req, res, next) => {
     res.status(500).send(err.stack)
 })
 
-app.listen(port, function () {
+app.listen(port, async function () {
     console.log('Your app running on http://localhost:' + port)
+
+    // Init lightweight OCR
+    await initOCR()
 })
 
 // clear old data
