@@ -1,6 +1,6 @@
 {
     "name": "auto-tools",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "description": "Auto Tools",
     "scripts": {
         "appium": "appium --base-path=/wd/hub --log-timestamp --local-timezone --log-no-colors --log-level error:warn --log ./log/appium.txt",
@@ -34,7 +34,6 @@
         "moment": "^2.30.1",
         "multer": "^2.0.2",
         "opencv-wasm": "^4.3.0-10",
-        "tesseract.js": "^6.0.1",
         "webdriverio": "^9.12.4"
     },
     "devDependencies": {

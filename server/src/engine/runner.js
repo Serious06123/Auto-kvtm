@@ -3,6 +3,25 @@ const { logErrMsg } = require('../services/log');
 const { connectAppium } = require('./webdriverio');
 const { writeLogData, getLogData } = require('../services/data');
 
+const checkOcrRequirement = (queue) => {
+    try {
+        const core = require('../games/sky-garden/core');
+        const needOcr = queue.some(x => {
+            if (!x.isRunning) return false;
+            const params = x.params || {};
+            const opts = params.gameOptions || {};
+            return opts.kho1 || opts.kho2;
+        });
+
+        if (needOcr) {
+            core.ensurePythonServer().catch(() => { });
+        } else {
+            core.shutdownPythonServer().catch(() => { });
+        }
+    } catch (e) {
+    }
+}
+
 class Runner {
     constructor() {
         // Holds active sessions: { id, params, driver, isRunning }
@@ -29,6 +48,7 @@ class Runner {
 
         // Mark running
         this.queue[startIndex].isRunning = true;
+        checkOcrRequirement(this.queue);
         const { params } = this.queue[startIndex];
         const { frequency } = params.gameOptions;
         const { quantity } = params.gameOptions;
@@ -92,7 +112,7 @@ class Runner {
 
                 try {
                     const tool = this.getAutoTool(params.selectedGame);
-                    if (tool) await tool({ ...params, index: i % 50 }, entry.driver);
+                    if (tool) await tool({ ...params, index: i % 50, loopIndex: i }, entry.driver);
                 } catch (err) {
                     logErrMsg(`autoTool error: ${err}`);
                 }
@@ -129,6 +149,7 @@ class Runner {
                     }
                 }
                 this.queue.splice(endIdx, 1);
+                checkOcrRequirement(this.queue);
             }
         }
         return this;
@@ -146,6 +167,7 @@ class Runner {
                     logErrMsg(`Error finishing driver on kill for ${deviceId}: ${e}`);
                 }
             }
+            checkOcrRequirement(this.queue);
         }
         return this;
     }

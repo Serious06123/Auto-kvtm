@@ -26,7 +26,7 @@ app.use((err, req, res, next) => {
     res.status(500).send(err.stack)
 })
 
-app.listen(port, function () {
+app.listen(port, async function () {
     console.log('Your app running on http://localhost:' + port)
 })
 

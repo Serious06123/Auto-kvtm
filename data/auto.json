@@ -286,6 +286,14 @@
             "order": 0,
             "recommend": false,
             "category": "other"
+        },
+        {
+            "key": "bantra",
+            "name": "Bán trà",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category": "tree"
         }
     ]
 }
