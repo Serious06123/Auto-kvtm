@@ -31,7 +31,7 @@ const getAuto = (autoKey) => {
 }
 
 const autoNangKho = async (driver, gameOptions = {}, loopIndex = 0) => {
-    const { kho1, kho2, khoFrequency = 1 } = gameOptions;
+    const { kho1, kho2, khoFrequency = 1, sellOtherKho } = gameOptions;
 
     // Check chẵn chu kỳ nhảy. Vòng index = 0 luôn luôn chạy. 
     // Các vòng sau chỉ chạy nếu loopIndex chia hết cho khoFrequency.
@@ -54,6 +54,13 @@ const autoNangKho = async (driver, gameOptions = {}, loopIndex = 0) => {
             if (sondo >= maxSondo + 10) sellList.push({ key: OtherKeys.sondo, value: Math.floor((sondo - maxSondo) / 10) });
             if (go >= maxGo + 10) sellList.push({ key: OtherKeys.go, value: Math.floor((go - maxGo) / 10) });
         }
+
+        // Bán chéo đồ rác của Kho 2 (Nếu người dùng tick Xả chéo và vắng mặt Kho 2)
+        if (sellOtherKho && !kho2) {
+            sellList.push({ key: OtherKeys.da, value: 20 });
+            sellList.push({ key: OtherKeys.sonvang, value: 20 });
+            sellList.push({ key: OtherKeys.dinh, value: 20 });
+        }
     }
     if (kho2) {
         // Lấy tự động mảng OCR trả về
@@ -70,9 +77,15 @@ const autoNangKho = async (driver, gameOptions = {}, loopIndex = 0) => {
             if (sonvang >= maxSonvang + 10) sellList.push({ key: OtherKeys.sonvang, value: Math.floor((sonvang - maxSonvang) / 10) });
             if (dinh >= maxDinh + 10) sellList.push({ key: OtherKeys.dinh, value: Math.floor((dinh - maxDinh) / 10) });
         }
+
+        // Bán chéo đồ rác của Kho 1 (Nếu người dùng tick Xả chéo và vắng mặt Kho 1)
+        if (sellOtherKho && !kho1) {
+            sellList.push({ key: OtherKeys.gach, value: 20 });
+            sellList.push({ key: OtherKeys.sondo, value: 20 });
+            sellList.push({ key: OtherKeys.go, value: 20 });
+        }
     }
 
-    // Nếu rổ rác có hàng, gọi xe bốc vác đi bán
     if (sellList.length > 0) {
         console.log(`[XẢ KHO] Phát hiện tràn kho! Tiến hành bán:`, sellList);
         let mutex = { value: 0 };

@@ -491,11 +491,20 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
             await driver.sleep(0.5)
             if (await driver.tapItemOnScreen(_getItemPath(itemId), SlotPositions.bando)) {
                 await _sell(driver, isAds)
+                if (option == SellItemOptions.other) {
+                    await driver.sleep(0.3)
+                    await driver.tap(49.7, 60.4)
+                }
                 itemId = _getItemId(items)
                 mutex2.value++
             }
             else {
-                break
+                if (Array.isArray(items)) {
+                    const idx = items.findIndex(el => el.key === itemId);
+                    if (idx >= 0) items[idx].value = 0;
+                }
+                itemId = _getItemId(items);
+                if (!itemId) break;
             }
             continue
         }
@@ -509,11 +518,20 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
             // choose item by image
             if ((await driver.tapItemOnScreen(_getItemPath(itemId), SlotPositions.bando))) {
                 await _sell(driver, isAds)
+                if (option == SellItemOptions.other) {
+                    await driver.sleep(0.3)
+                    await driver.tap(49.7, 60.4)
+                }
                 itemId = _getItemId(items)
                 mutex2.value++
             }
             else {
-                break
+                if (Array.isArray(items)) {
+                    const idx = items.findIndex(el => el.key === itemId);
+                    if (idx >= 0) items[idx].value = 0;
+                }
+                itemId = _getItemId(items);
+                if (!itemId) break;
             }
             continue
         }
