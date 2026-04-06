@@ -1,4 +1,5 @@
 const core = require('./core')
+const { SellItemOptions, OtherKeys } = require('./const')
 
 const openGame = async (driver, gameOptions = {}, index) => {
     const { openGame } = gameOptions
@@ -29,12 +30,65 @@ const getAuto = (autoKey) => {
     }
 }
 
+const autoNangKho = async (driver, gameOptions = {}, loopIndex = 0) => {
+    const { kho1, kho2, khoFrequency = 1 } = gameOptions;
+
+    // Check chẵn chu kỳ nhảy. Vòng index = 0 luôn luôn chạy. 
+    // Các vòng sau chỉ chạy nếu loopIndex chia hết cho khoFrequency.
+    if (loopIndex % khoFrequency !== 0) return;
+
+    let sellList = [];
+
+    if (kho1) {
+        // Lấy tự động mảng OCR trả về
+        const kho1String = await core.readNumbersAndSave(driver, '1')
+        const arr = kho1String.split(' ').map(Number)
+
+        // Cấu trúc chuẩn 6 số: Gạch(0,1), Sơn Đỏ(2,3), Gỗ(4,5)
+        if (arr.length >= 6) {
+            const gach = arr[0], maxGach = arr[1];
+            const sondo = arr[2], maxSondo = arr[3];
+            const go = arr[4], maxGo = arr[5];
+
+            if (gach >= maxGach + 10) sellList.push({ key: OtherKeys.gach, value: Math.floor((gach - maxGach) / 10) });
+            if (sondo >= maxSondo + 10) sellList.push({ key: OtherKeys.sondo, value: Math.floor((sondo - maxSondo) / 10) });
+            if (go >= maxGo + 10) sellList.push({ key: OtherKeys.go, value: Math.floor((go - maxGo) / 10) });
+        }
+    }
+    if (kho2) {
+        // Lấy tự động mảng OCR trả về
+        const kho2String = await core.readNumbersAndSave(driver, '2')
+        const arr = kho2String.split(' ').map(Number)
+
+        // Cấu trúc chuẩn 6 số: Đá(0,1), Sơn Vàng(2,3), Đinh(4,5)
+        if (arr.length >= 6) {
+            const da = arr[0], maxDa = arr[1];
+            const sonvang = arr[2], maxSonvang = arr[3];
+            const dinh = arr[4], maxDinh = arr[5];
+
+            if (da >= maxDa + 10) sellList.push({ key: OtherKeys.da, value: Math.floor((da - maxDa) / 10) });
+            if (sonvang >= maxSonvang + 10) sellList.push({ key: OtherKeys.sonvang, value: Math.floor((sonvang - maxSonvang) / 10) });
+            if (dinh >= maxDinh + 10) sellList.push({ key: OtherKeys.dinh, value: Math.floor((dinh - maxDinh) / 10) });
+        }
+    }
+
+    // Nếu rổ rác có hàng, gọi xe bốc vác đi bán
+    if (sellList.length > 0) {
+        console.log(`[XẢ KHO] Phát hiện tràn kho! Tiến hành bán:`, sellList);
+        let mutex = { value: 0 };
+        let mutex2 = { value: 0 };
+        // Phân loại gian hàng: Other (Dành cho đồ Nâng Cấp Kho)
+        await core.sellItems(driver, SellItemOptions.other, sellList, mutex, mutex2, false, true, true);
+    }
+}
+
 module.exports = async (data, driver) => {
-    const { gameOptions, index } = data
+    const { gameOptions, index, loopIndex = 0 } = data
     const { runAuto } = gameOptions
 
     await openGame(driver, gameOptions, index)
     await openChests(driver, gameOptions)
+    await autoNangKho(driver, gameOptions, loopIndex)
     var auto = getAuto(runAuto)
     auto && (await auto(driver, gameOptions))
     await makeEvent(driver, index)

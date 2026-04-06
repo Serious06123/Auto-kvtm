@@ -4,3 +4,8 @@ dist/
 .vs
 .DS_Store
 .vscode
+
+.venv/
+data_kho/
+log/
+ocr_server.log

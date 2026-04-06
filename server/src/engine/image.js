@@ -30,7 +30,7 @@ getCropInfo = (findPosition, isRotated) => {
     case 'thuhoach':
       result = { x: 281, y: 750, w: 100, h: 103 }; break
     case 'bando':
-      result = { x: 30, y: 365, w: 370, h: 325 }; break
+      result = { x: 15, y: 343, w: 400, h: 400 }; break
     case 'moruong':
       result = { x: 293, y: 510, w: 200, h: 200 }; break
     case 'fullkho':
@@ -43,6 +43,8 @@ getCropInfo = (findPosition, isRotated) => {
       result = { x: 200, y: 341, w: 600, h: 400 }; break
     case 'batbo':
       result = { x: 294, y: 787, w: 566, h: 69 }; break
+    case 'readkho':
+      result = { x: 17, y: 405, w: 225, h: 25 }; break
     default:
       return null
   }
@@ -134,4 +136,5 @@ async function findCoordinates(data, itemFilePath, findPosition = null) {
 
 module.exports = {
   findCoordinates,
+  readAndResizeImage,
 }

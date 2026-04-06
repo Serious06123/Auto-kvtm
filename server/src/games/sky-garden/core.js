@@ -1,5 +1,6 @@
 const { back } = require('appium-uiautomator2-driver/build/lib/commands/navigation')
 const { KeyCode, SwipeDirection } = require('../../engine/webdriverio')
+const fs = require('fs')
 const {
     DelayTime,
     MakeSlotList,
@@ -403,13 +404,20 @@ const makeItems = async (driver, floor = 1, slot = 0, number = 1, mutex) => {
         if (count > 10) {
             await backToGame(driver)
             await driver.tap(position.x, position.y)
-            await driver.sleep(0.1)
+            await driver.sleep(1)
             if ((await driver.haveItemOnScreen(_getItemPath(ItemKeys.fullkho), SlotPositions.p1))) {
                 mutex.value = 1;
                 await backToGame(driver)
                 break;
             }
             await backToGame(driver)
+            await driver.sleep(0.5)
+            await driver.tap(position.x, position.y)
+            await driver.sleep(0.1)
+            if ((await driver.haveItemOnScreen(_getItemPath(ItemKeys.emptyProductionSlot), SlotPositions.p3))) {
+                count = 9;
+                continue;
+            }
             if (!(await haveshoponscreen(driver))) {
                 await openGame(driver)
                 mutex.value = 1;
@@ -443,6 +451,7 @@ const makeItems = async (driver, floor = 1, slot = 0, number = 1, mutex) => {
 
 const sellItems = async (driver, option, items, mutex, mutex2, removeItems = false, isAds = true, loop = true) => {
     if (mutex2.value >= items.value) {
+        loop = true
         mutex.value = 0
         return
     }
@@ -463,11 +472,12 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
         { duration: 0, x: 23.8, y: 54.9 },
         { duration: 300, x: 74.4, y: 54.9 },
     ])
-    // buy all items
+    await driver.sleep(1.5)
     let itemId = _getItemId(items)
     let count = 0, cnt = mutex2.value
     while (itemId) {
         if (mutex2.value >= items.value - 1) {
+            loop = true
             mutex.value = 0
             break;
         }
@@ -478,7 +488,7 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
             await driver.tap(soldSlot.x, soldSlot.y)
             await driver.sleep(0.5)
             await driver.tap(option_x, option_y)
-            await driver.sleep(0.3)
+            await driver.sleep(0.5)
             if (await driver.tapItemOnScreen(_getItemPath(itemId), SlotPositions.bando)) {
                 await _sell(driver, isAds)
                 itemId = _getItemId(items)
@@ -495,7 +505,7 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
             await driver.tap(emptySlot.x, emptySlot.y)
             await driver.sleep(0.6)
             await driver.tap(option_x, option_y)
-            await driver.sleep(0.3)
+            await driver.sleep(0.5)
             // choose item by image
             if ((await driver.tapItemOnScreen(_getItemPath(itemId), SlotPositions.bando))) {
                 await _sell(driver, isAds)
@@ -555,6 +565,10 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
                         break
                     }
                 }
+            }
+            if (!loop) {
+                count = 0;
+                continue;
             }
             if (mutex.value == 1) {
                 return await sellItems(driver, option, items, mutex, mutex2, removeItems, isAds, loop)
@@ -699,8 +713,8 @@ const makeEvents = async (driver) => {
         }
         for (let i = 0; i < 3; i++) {
             await driver.action([
-                { duration: 0, x: 40, y: 36 },
-                { duration: 100, x: 17, y: 55.8 },
+                { duration: 0, x: 42.0, y: 38.7 },
+                { duration: 100, x: 23.1, y: 55.8 },
             ])
             await driver.sleep(1)
         }
@@ -713,6 +727,251 @@ const makeEvents = async (driver) => {
 const haveshoponscreen = async (driver) => {
     let check = await driver.haveItemOnScreen(_getItemPath(ItemKeys.shopGem), SlotPositions.p3p4)
     return check
+}
+
+let pythonSpawnPromise = null;
+
+const ensurePythonServer = async () => {
+    const http = require('http');
+    const { spawn } = require('child_process');
+    const { resolve } = require('path');
+
+    // Check if it's already alive
+    const pingServer = () => new Promise((resolvePing) => {
+        const req = http.get('http://127.0.0.1:5000/ping', (res) => {
+            resolvePing(res.statusCode === 200);
+        }).on('error', () => resolvePing(false));
+        req.setTimeout(1000, () => { req.destroy(); resolvePing(false); });
+    });
+
+    const isAlive = await pingServer();
+    if (isAlive) return true;
+
+    // Khoá luồng để nhiều giả lập không gọi đẻ nhánh Python cùng lúc
+    if (!pythonSpawnPromise) {
+        pythonSpawnPromise = new Promise(async (resolvePromise) => {
+            try {
+                console.log("\n[Tiết kiệm RAM] OCR Server đang tắt. Bắt đầu tự động nạp AI ngầm...");
+                const pyScript = resolve(__dirname, '../../utils/ocr_server.py');
+                const rootDir = resolve(__dirname, '../../../../');
+
+                const fs = require('fs');
+                const outLog = fs.openSync(resolve(rootDir, 'ocr_server.log'), 'a');
+
+                const child = spawn('python', [pyScript], {
+                    detached: true,
+                    stdio: ['ignore', outLog, outLog],  // Cấp file để Python in log, tránh crash BrokenPipe
+                    windowsHide: true,     // Chống nhá cửa sổ trên bảng điều khiển Windows
+                    cwd: rootDir,
+                    env: { ...process.env, PYTHONIOENCODING: 'utf8' } // Cấp phép in tiếng Việt
+                });
+                child.unref();
+
+                // Đợi tối đa 15 giây cho PyTorch nạp xong vào RAM
+                for (let i = 0; i < 15; i++) {
+                    await new Promise(r => setTimeout(r, 1000));
+                    if (await pingServer()) {
+                        console.log("\n[Tiết kiệm RAM] Nạp AI thành công! Tiếp tục quét kho...");
+                        resolvePromise(true);
+                        return;
+                    }
+                }
+                console.error("\n[Tiết kiệm RAM] Quá 15 giây vẫn chưa nạp xong AI!");
+                resolvePromise(false);
+            } catch (err) {
+                console.error("\n[Tiết kiệm RAM] Lỗi khi cố gắng bật AI:", err);
+                resolvePromise(false);
+            } finally {
+                setTimeout(() => { pythonSpawnPromise = null; }, 1000);
+            }
+        });
+    }
+
+    return await pythonSpawnPromise;
+}
+
+const shutdownPythonServer = async () => {
+    const http = require('http');
+    return new Promise((resolve) => {
+        const req = http.get('http://127.0.0.1:5000/exit', (res) => {
+            console.log("\n[Tiết kiệm RAM] Đã gửi lệnh tự huỷ tới Máy chủ AI thành công.");
+            resolve(true);
+        }).on('error', () => resolve(true)); // Lỗi báo máy chủ đã tắt, cũng tính là true
+        req.setTimeout(2000, () => { req.destroy(); resolve(true); });
+    });
+}
+
+const readNumbersAndSave = async (driver, type) => {
+    try {
+        await goDownLast(driver)
+        await driver.sleep(0.2)
+        await driver.tap(80, 84.4)
+        await driver.sleep(0.3)
+        if (type == 1) {
+            await driver.tap(44.8, 37.3)
+            await driver.sleep(0.3)
+        }
+        if (type == 2) {
+            await driver.tap(44.8, 44.3)
+            await driver.sleep(0.3)
+        }
+        const screenshotDataRaw = await driver.screenshot()
+        // Đảm bảo ép chuẩn Base64 String
+        const screenshotBase64 = typeof screenshotDataRaw === 'string' ? screenshotDataRaw :
+            (Buffer.isBuffer(screenshotDataRaw) ? screenshotDataRaw.toString('base64') :
+                (screenshotDataRaw.value || ""));
+
+        // XIN LỖI JIMP, MÀY BỊ SA THẢI RỒI! 
+        // Thay vì dùng Jimp gọt ảnh tốn 20% CPU và fs để ghi ổ cứng, ta gửi sống 100% qua RAM!
+
+        // Đảm bảo Máy chủ AI đang chạy, nếu tắt thì đánh thức nó dậy (nếu chưa gọi)
+        await ensurePythonServer()
+
+        // Gọi API sang Máy chủ Python EasyOCR nền tảng (cổng 5000)
+        const http = require('http');
+        let numbersStr = "";
+        try {
+            numbersStr = await new Promise((resolvePromise, rejectPromise) => {
+                const req = http.request({
+                    hostname: '127.0.0.1',
+                    port: 5000,
+                    path: '/ocr',
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    timeout: 20000 // 20 giây tối đa
+                }, (res) => {
+                    let body = '';
+                    res.on('data', (chunk) => body += chunk);
+                    res.on('end', () => {
+                        try {
+                            const data = JSON.parse(body);
+                            if (data.success) {
+                                resolvePromise(data.text || "");
+                            } else {
+                                rejectPromise(new Error(data.error || "Lỗi không xác định từ OCR Server"));
+                            }
+                        } catch (err) {
+                            rejectPromise(err);
+                        }
+                    });
+                });
+
+                req.on('error', (e) => {
+                    if (e.code === 'ECONNREFUSED') {
+                        console.error('\n[LỖI NGHIÊM TRỌNG]: Không thể kết nối tới mô hình AI. Thử lại sau.\n');
+                    }
+                    rejectPromise(e);
+                });
+                req.on('timeout', () => {
+                    req.destroy();
+                    rejectPromise(new Error("Timeout kết nối Python OCR Server"));
+                });
+
+                // Vận chuyển đường cao tốc (Gửi mảng Byte Base64 trong 0.01 giây bằng RAM)
+                req.write(JSON.stringify({ image_base64: screenshotBase64 }));
+                req.end();
+            });
+        } catch (e) {
+            console.error("Lỗi API gọi Python:", e.message);
+        }
+
+        // Bóc tách logic
+        const rawData = numbersStr.replace(/[^0-9\s/]/g, '').trim();
+        const chunks = rawData.split(/\s+/).filter(c => c);
+
+        let denominator = null;
+
+        // 1. Tìm "số đẹp" (có chứa dấu /)
+        for (let c of chunks) {
+            if (c.includes('/')) {
+                const parts = c.split('/');
+                if (parts.length > 1 && parts[1].length > 0) {
+                    denominator = parts[1];
+                    break;
+                }
+            }
+        }
+
+        // 2. Trường hợp tệ nhất không có dấu /: tìm hậu tố chung
+        if (!denominator && chunks.length > 1) {
+            let suffix = "";
+            let minLen = Math.min(...chunks.map(c => c.length));
+            for (let i = 1; i <= minLen; i++) {
+                const char0 = chunks[0][chunks[0].length - i];
+                let allMatch = true;
+                for (let j = 1; j < chunks.length; j++) {
+                    if (chunks[j][chunks[j].length - i] !== char0) {
+                        allMatch = false;
+                        break;
+                    }
+                }
+                if (allMatch) {
+                    suffix = char0 + suffix;
+                } else {
+                    break;
+                }
+            }
+            if (suffix.length > 0) {
+                denominator = suffix;
+            }
+        }
+
+        // 3. Tách các số còn lại và áp dụng luật sửa lỗi OCR
+        const results = [];
+        for (let c of chunks) {
+            let current = "";
+            let max = denominator || "";
+
+            if (c.includes('/')) {
+                const parts = c.split('/');
+                current = parts[0];
+                if (!denominator) max = parts[1];
+            } else if (denominator && c.endsWith(denominator)) {
+                // Tách phần đầu dựa vào độ dài mẫu số
+                current = c.substring(0, c.length - denominator.length);
+
+                // Luật 1: vì số 0 đứng đầu nên 01 chỉ lấy số 0
+                if (current.startsWith('0') && current.length > 1) {
+                    current = '0';
+                }
+            } else {
+                current = c;
+            }
+            if (!current) current = "0";
+            if (!max) max = "0";
+
+            // Luật 2 (Áp dụng toàn cục): Bỏ số kế tiếp chen ngang do nhận diện rác nét nghiêng
+            while (current.length >= 2 && parseInt(current) >= parseInt(max) + 50 && parseInt(max) > 0) {
+                if (parseInt(current) / parseInt(max) <= 2) {
+                    current = parseInt(max) + 50;
+                }
+                else {
+                    current = current.slice(0, -1);
+                }
+            }
+            results.push(`${current} ${max}`);
+        }
+
+        let parsedNumbers = results.join(' ');
+        if (!parsedNumbers || parsedNumbers === "") {
+            parsedNumbers = "0";
+        }
+
+        // Xuất file chính thức ghi đè dạng "x y a b c d"
+        const dir = resolve(__dirname, `../../../../data_kho`);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        const fileName = resolve(dir, `kho_${type}_data_${driver.deviceId || 'unknown'}.txt`)
+        fs.writeFileSync(fileName, parsedNumbers, 'utf8')
+
+        await backToGame(driver)
+
+        return parsedNumbers;
+    } catch (err) {
+        console.error(`Error in readNumbersAndSave for type ${type}:`, err);
+        return "0";
+    }
 }
 
 module.exports = {
@@ -734,6 +993,9 @@ module.exports = {
     makeEvents,
     haveshoponscreen,
     findbugonfloor,
+    readNumbersAndSave,
+    ensurePythonServer,
+    shutdownPythonServer,
 }
 
 // private method
@@ -761,11 +1023,11 @@ const _getItemId = (items) => {
 const _sell = async (driver, isAds = true) => {
     await driver.sleep(0.2)
     // increase price
-    // for (let i = 0; i < 10; i++) {
-    //     await driver.tap(85.0, 54.1)
-    //     await driver.sleep(DelayTime)
-    // }
-    // await driver.sleep(0.2)
+    for (let i = 0; i < 10; i++) {
+        await driver.tap(85.0, 47.6)
+        await driver.sleep(DelayTime)
+    }
+    await driver.sleep(0.2)
     // stop increase price
     if (!isAds) {
         // disable ads

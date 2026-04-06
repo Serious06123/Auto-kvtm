@@ -1,7 +1,8 @@
 const moment = require('moment')
-import React, { useState } from 'react'
-import { Layout, ConfigProvider, theme, notification } from 'antd'
+import React, { useState, useEffect } from 'react'
+import { Layout, ConfigProvider, notification, Button } from 'antd'
 const { Header, Content, Footer } = Layout
+import { SyncOutlined } from '@ant-design/icons'
 import axios from 'axios'
 import * as styles from './App.module.css'
 
@@ -14,27 +15,41 @@ const UPDATE_CHECK_URL = 'https://raw.githubusercontent.com/Serious06123/Auto-kv
 const App = (props) => {
     const [refreshTime, setRefreshTime] = useState(moment().format('LTS'))
 
-    React.useEffect(() => {
-        const checkUpdate = async () => {
-            try {
-                // Thêm timestamp để tránh cache
-                const response = await axios.get(`${UPDATE_CHECK_URL}?t=${new Date().getTime()}`)
-                const remoteVersion = response.data.version
+    const handleCheckUpdate = async (manual = false) => {
+        try {
+            // Thêm timestamp để tránh cache
+            const response = await axios.get(`${UPDATE_CHECK_URL}?t=${new Date().getTime()}`)
+            const remoteVersion = response.data.version
 
-                if (remoteVersion && remoteVersion !== __APP_VERSION__) {
-                    notification.info({
-                        message: 'Có bản cập nhật mới',
-                        description: `Phiên bản mới (${remoteVersion}) đã sẵn sàng. Phiên bản hiện tại: ${__APP_VERSION__}.`,
-                        placement: 'bottomRight',
-                        duration: 10,
-                    })
-                }
-            } catch (error) {
-                console.error('Không thể kiểm tra cập nhật:', error)
+            if (remoteVersion && remoteVersion !== __APP_VERSION__) {
+                notification.info({
+                    message: 'CÓ BẢN CẬP NHẬT MỚI',
+                    description: `Phiên bản mới (v${remoteVersion}) đã sẵn sàng để tải xuống. Phiên bản bạn đang cài: v${__APP_VERSION__}.`,
+                    placement: 'bottomRight',
+                    duration: 10,
+                })
+            } else if (manual) {
+                notification.success({
+                    message: 'ĐÃ LÀ BẢN MỚI NHẤT',
+                    description: `Version v${__APP_VERSION__} bạn đang dùng là bản cập nhật mới nhất từ nhà phát triển.`,
+                    placement: 'bottomRight',
+                    duration: 5,
+                })
+            }
+        } catch (error) {
+            console.error('Không thể kiểm tra cập nhật:', error)
+            if (manual) {
+                notification.error({
+                    message: 'LỖI ĐƯỜNG TRUYỀN',
+                    description: 'Kết nối tới máy chủ GitHub thất bại, hãy tải lại trang.',
+                    placement: 'bottomRight',
+                })
             }
         }
+    }
 
-        checkUpdate()
+    useEffect(() => {
+        handleCheckUpdate(false)
     }, [])
 
     return (
@@ -74,8 +89,17 @@ const App = (props) => {
                         </div>
                     </div>
                 </Content>
-                <Footer className={styles.footer}>
+                <Footer className={styles.footer} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px' }}>
                     Auto Tool ©2024 - v{__APP_VERSION__}
+                    <Button 
+                        type="dashed" 
+                        size="small" 
+                        icon={<SyncOutlined />} 
+                        onClick={() => handleCheckUpdate(true)}
+                        title="Vào kho xem có bản Update nào không"
+                    >
+                        Kiểm tra cập nhật
+                    </Button>
                 </Footer>
             </Layout>
         </ConfigProvider>

@@ -27,6 +27,7 @@ const SkyGarden = (props) => {
 
   const [frequency, setFrequency] = useState(9999)
   const [quantity, setQuantity] = useState(9999)
+  const [khoFrequency, setKhoFrequency] = useState(1) // <- Thêm biến cài đặt tần suất quét kho
   const [gameOption, setGameOption] = useState(['sellItems', 'openChests', 'openGame'])
   const [autoOption, setAutoOption] = useState([])
   const [createOpen, setCreateOpen] = useState(false)
@@ -86,6 +87,7 @@ const SkyGarden = (props) => {
       kho2: gameOption.includes('kho2'),
       frequency: frequency || 1,
       quantity: quantity || 1,
+      khoFrequency: khoFrequency || 1, // Kẹp tần suất kho gửi xuống backend
     }
     props.runAuto(data)
   }
@@ -151,6 +153,13 @@ const SkyGarden = (props) => {
               <Col span={24}><Divider style={{ margin: '8px 0' }} /></Col>
               <Col span={24}><Checkbox value="kho1">Auto nâng kho 1 (Beta)</Checkbox></Col>
               <Col span={24}><Checkbox value="kho2">Auto nâng kho 2 (Beta)</Checkbox></Col>
+              <Col span={24}>
+                 <div style={{ display: 'flex', alignItems: 'center', marginTop: 4, opacity: (gameOption.includes('kho1') || gameOption.includes('kho2')) ? 1 : 0.5 }}>
+                     <span style={{ marginRight: 8, fontSize: 13 }}>Kiểm tra Nâng Kho định kỳ sau mỗi: </span>
+                     <InputNumber min={1} max={9999} value={khoFrequency} onChange={setKhoFrequency} disabled={!(gameOption.includes('kho1') || gameOption.includes('kho2'))} /> 
+                     <span style={{ marginLeft: 8, fontSize: 13 }}>lần lặp.</span>
+                 </div>
+              </Col>
             </Row>
           </Checkbox.Group>
 
