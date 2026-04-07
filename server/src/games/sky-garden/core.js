@@ -536,7 +536,7 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
             continue
         }
         // click ads
-        if (cnt == mutex2.value) {
+        if (!loop || cnt == mutex2.value) {
             var chuaqc = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.chuaqc))
             if (chuaqc) {
                 if (isAds) {
@@ -585,6 +585,16 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
                 }
             }
             if (!loop) {
+                await driver.action([
+                    { duration: 0, x: 23.8, y: 54.9 },
+                    { duration: 300, x: 74.4, y: 54.9 },
+                ])
+                await driver.sleep(0.2)
+                await driver.action([
+                    { duration: 0, x: 23.8, y: 54.9 },
+                    { duration: 300, x: 74.4, y: 54.9 },
+                ])
+                await driver.sleep(1.5)
                 count = 0;
                 continue;
             }
@@ -776,12 +786,16 @@ const ensurePythonServer = async () => {
                 const fs = require('fs');
                 const outLog = fs.openSync(resolve(rootDir, 'ocr_server.log'), 'a');
 
-                const child = spawn('python', [pyScript], {
-                    detached: true,
-                    stdio: ['ignore', outLog, outLog],  // Cấp file để Python in log, tránh crash BrokenPipe
-                    windowsHide: true,     // Chống nhá cửa sổ trên bảng điều khiển Windows
+                // Ưu tiên dùng python.exe từ .venv nội bộ (Portable)
+                const venvPython = resolve(rootDir, '.venv', 'Scripts', 'python.exe');
+                const pythonCmd = fs.existsSync(venvPython) ? venvPython : 'python';
+                console.log(`[AI] Sử dụng Python: ${pythonCmd}`);
+
+                const child = spawn(pythonCmd, [pyScript], {
+                    stdio: ['ignore', outLog, outLog],
+                    windowsHide: true,
                     cwd: rootDir,
-                    env: { ...process.env, PYTHONIOENCODING: 'utf8' } // Cấp phép in tiếng Việt
+                    env: { ...process.env, PYTHONIOENCODING: 'utf8' }
                 });
                 child.unref();
 

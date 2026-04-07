@@ -40,8 +40,7 @@ const produceItems = async (driver, isLast, mutex) => {
 
 const sellItems = async (driver, mutex, mutex2, removeItems = false, quantity = 0) => {
   // Sell Goods
-  await core.sellItems(driver, SellItemOptions.goods, [{ key: ProductKeys.tinhDauDua, value: 20 }], mutex, mutex2, removeItems)
-  await core.sellItems(driver, SellItemOptions.goods, [{ key: ProductKeys.traHoaHong, value: 20 }], mutex, mutex2, removeItems)
+  await core.sellItems(driver, SellItemOptions.goods, [{ key: ProductKeys.tinhDauDua, value: 20 }, { key: ProductKeys.traHoaHong, value: 20 }], mutex, mutex2, removeItems)
 }
 
 // auto generated

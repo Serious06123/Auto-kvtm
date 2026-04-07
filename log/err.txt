@@ -1,1 +1,3 @@
-5:31:07 PM : autoTool error: invalid session id: WebDriverError: A session is either terminated or not started when running "execute/sync" with method "POST" and args "mobile:clickGesture"
+3:56:17 PM : autoTool error: invalid session id: WebDriverError: A session is either terminated or not started when running "execute/sync" with method "POST" and args "mobile:swipeGesture"
+4:03:22 PM : autoTool error: invalid session id: WebDriverError: A session is either terminated or not started when running "execute/sync" with method "POST" and args "mobile:pressKey"
+4:11:32 PM : autoTool error: invalid session id: WebDriverError: A session is either terminated or not started when running "screenshot" with method "GET"

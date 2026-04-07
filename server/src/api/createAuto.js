@@ -124,7 +124,7 @@ const createAuto = async (req, res, next) => {
         if (logic.sell && Array.isArray(logic.sell)) {
             for (const l of logic.sell) lines.push('  ' + l)
         } else {
-            lines.push("  await core.sellItems(driver, SellItemOptions.goods, [{ key: ProductKeys.traHoaHong, value: 20 }], mutex, mutex2 , removeItems)")
+            lines.push("  await core.sellItems(driver, SellItemOptions.goods, [{ key: ProductKeys.traHoaHong, value: 20 }], mutex, mutex2, removeItems, true)")
         }
         lines.push('}')
         lines.push('')
@@ -214,7 +214,7 @@ const updateAuto = async (req, res, next) => {
         if (logic.sell && Array.isArray(logic.sell) && logic.sell.length) {
             for (const l of logic.sell) lines.push('  ' + l)
         } else {
-            lines.push("  await core.sellItems(driver, SellItemOptions.goods, [{ key: ProductKeys.traHoaHong, value: 20 }], mutex, mutex2 , removeItems)")
+            lines.push("  await core.sellItems(driver, SellItemOptions.goods, [{ key: ProductKeys.traHoaHong, value: 20 }], mutex, mutex2, removeItems, true)")
         }
         lines.push('}')
         lines.push('')

@@ -294,6 +294,22 @@
             "order": 0,
             "recommend": false,
             "category": "tree"
+        },
+        {
+            "key": "tuyet",
+            "name": "cao tuyet",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category": "tree"
+        },
+        {
+            "key": "selltuyet",
+            "name": "test bán tuyết",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category": "tree"
         }
     ]
 }

@@ -1,11 +1,11 @@
 const core = require('../core')
-const { SellItemOptions, ProductKeys, TreeKeys , ProductTreeKeys, ProductMineralKeys ,OtherKeys, EventKeys } = require('../const')
+const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralKeys, OtherKeys, EventKeys } = require('../const')
 
 const produceItems = async (driver, isLast, mutex) => {
   await core.goUp(driver, 1)
-  await core.plantTrees(driver, mutex, TreeKeys.tra, 4, 5, true)
+  await core.plantTrees(driver, mutex, TreeKeys.tuyet, 4, 5, true)
   await core.goUp(driver, 4)
-  await core.plantTrees(driver, mutex, TreeKeys.tra, 4, 5, true)
+  await core.plantTrees(driver, mutex, TreeKeys.tuyet, 4, 5, true)
   await core.goDownLast(driver)
   await core.goUp(driver, 1)
   await driver.sleep(2)
@@ -20,7 +20,7 @@ const produceItems = async (driver, isLast, mutex) => {
 
 const sellItems = async (driver, mutex, mutex2, removeItems = false, quantity = 0) => {
   // Sell Goods
-  await core.sellItems(driver, SellItemOptions.tree, [{ key: ProductTreeKeys.tra, value: 48 }], mutex, mutex2, removeItems, true, false)
+  await core.sellItems(driver, SellItemOptions.tree, [{ key: ProductTreeKeys.tuyet, value: 24 }], mutex, mutex2, removeItems, true, false)
 }
 
 // auto generated
@@ -30,10 +30,10 @@ module.exports = async (driver, gameOptions) => {
   const { quantity } = gameOptions;
   let mutex = { value: 0 };
   let mutex2 = { value: 0 };
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 5; i++) {
     if (mutex.value != 1) {
-      await produceItems(driver, i == 9, mutex);
-    } 
+      await produceItems(driver, i == 4, mutex);
+    }
   }
 
   if (sell) {
