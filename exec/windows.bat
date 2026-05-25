@@ -7,6 +7,13 @@ for /f %%l in (.env) do (
     set %%l
 )
 
+REM Tu dong cau hinh Android SDK tu thu muc bin co san
+set "CURRENT_DIR=%~dp0"
+for %%i in ("%CURRENT_DIR%..") do set "PROJECT_ROOT=%%~fi"
+set "ANDROID_HOME=%PROJECT_ROOT%\bin"
+set "PATH=%ANDROID_HOME%\platform-tools;%PATH%"
+
+
 if not !IS_BUILDED!==TRUE (
     call cd ..
     call npm ci

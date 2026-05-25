@@ -772,26 +772,42 @@ const ensurePythonServer = async () => {
         req.setTimeout(1000, () => { req.destroy(); resolvePing(false); });
     });
 
-    const isAlive = await pingServer();
-    if (isAlive) return true;
+    try {
+        const isAlive = await pingServer();
+        if (isAlive) return true;
+    } catch (e) {
+        console.error("Lỗi khi ping AI server:", e);
+    }
 
     // Khoá luồng để nhiều giả lập không gọi đẻ nhánh Python cùng lúc
     if (!pythonSpawnPromise) {
         pythonSpawnPromise = new Promise(async (resolvePromise) => {
             try {
                 console.log("\n[Tiết kiệm RAM] OCR Server đang tắt. Bắt đầu tự động nạp AI ngầm...");
-                const pyScript = resolve(__dirname, '../../utils/ocr_server.py');
                 const rootDir = resolve(__dirname, '../../../../');
 
                 const fs = require('fs');
                 const outLog = fs.openSync(resolve(rootDir, 'ocr_server.log'), 'a');
 
-                // Ưu tiên dùng python.exe từ .venv nội bộ (Portable)
-                const venvPython = resolve(rootDir, '.venv', 'Scripts', 'python.exe');
-                const pythonCmd = fs.existsSync(venvPython) ? venvPython : 'python';
-                console.log(`[AI] Sử dụng Python: ${pythonCmd}`);
+                // Ưu tiên 1: ocr_server.exe (PyInstaller - không cần Python)
+                const exePath = resolve(rootDir, 'ai_server', 'ocr_server', 'ocr_server.exe');
 
-                const child = spawn(pythonCmd, [pyScript], {
+                let spawnCmd, spawnArgs;
+                if (fs.existsSync(exePath)) {
+                    spawnCmd = exePath;
+                    spawnArgs = [];
+                    console.log(`[AI] Sử dụng EXE: ${exePath}`);
+                } else {
+                    // Fallback: python script
+                    const pyScript = resolve(__dirname, '../../utils/ocr_server.py');
+                    const portablePython = resolve(rootDir, 'python_portable', 'python.exe');
+                    const venvPython = resolve(rootDir, '.venv', 'Scripts', 'python.exe');
+                    spawnCmd = fs.existsSync(portablePython) ? portablePython : (fs.existsSync(venvPython) ? venvPython : 'python');
+                    spawnArgs = [pyScript];
+                    console.log(`[AI] Sử dụng Python: ${spawnCmd}`);
+                }
+
+                const child = spawn(spawnCmd, spawnArgs, {
                     stdio: ['ignore', outLog, outLog],
                     windowsHide: true,
                     cwd: rootDir,
@@ -799,7 +815,7 @@ const ensurePythonServer = async () => {
                 });
                 child.unref();
 
-                // Đợi tối đa 15 giây cho PyTorch nạp xong vào RAM
+                // Đợi tối đa 30 giây cho PyTorch nạp xong vào RAM (Bản EXE thường chậm hơn ở lần đầu)
                 for (let i = 0; i < 15; i++) {
                     await new Promise(r => setTimeout(r, 1000));
                     if (await pingServer()) {
@@ -819,7 +835,14 @@ const ensurePythonServer = async () => {
         });
     }
 
-    return await pythonSpawnPromise;
+    try {
+        const result = await pythonSpawnPromise;
+        return result;
+    } catch (err) {
+        console.error("Lỗi trong quá trình chạy pythonSpawnPromise:", err);
+        pythonSpawnPromise = null;
+        return false;
+    }
 }
 
 const shutdownPythonServer = async () => {
@@ -900,87 +923,128 @@ const readNumbersAndSave = async (driver, type) => {
                 });
 
                 // Vận chuyển đường cao tốc (Gửi mảng Byte Base64 trong 0.01 giây bằng RAM)
-                req.write(JSON.stringify({ image_base64: screenshotBase64 }));
+                req.write(JSON.stringify({
+                    image_base64: screenshotBase64,
+                    type: type,
+                    device_id: driver.deviceId || 'unknown'
+                }));
                 req.end();
             });
         } catch (e) {
             console.error("Lỗi API gọi Python:", e.message);
         }
 
-        // Bóc tách logic
-        const rawData = numbersStr.replace(/[^0-9\s/]/g, '').trim();
-        const chunks = rawData.split(/\s+/).filter(c => c);
+        console.log(`[OCR RAW] Kho ${type}: "${numbersStr}"`);
 
+        // Bóc tách logic
+        let rawData = numbersStr.replace(/[^0-9\s/]/g, '').trim();
+
+        // =====================================================================
+        // BƯỚC 1: TÌM DENOMINATOR (MẪU SỐ / MAX) MỘT CÁCH THÔNG MINH
+        // =====================================================================
         let denominator = null;
 
-        // 1. Tìm "số đẹp" (có chứa dấu /)
-        for (let c of chunks) {
-            if (c.includes('/')) {
-                const parts = c.split('/');
-                if (parts.length > 1 && parts[1].length > 0) {
-                    denominator = parts[1];
-                    break;
+        if (rawData.includes('/')) {
+            // Tìm tất cả các cụm số đứng ngay sau dấu '/'
+            let slashParts = rawData.split('/');
+            let candidates = [];
+
+            for (let i = 1; i < slashParts.length; i++) {
+                let afterSlash = slashParts[i].trim().split(/\s+/)[0]; // Lấy token đầu tiên sau dấu /
+                if (afterSlash) candidates.push(afterSlash);
+            }
+
+            // Tìm cụm xuất hiện nhiều nhất và ngắn nhất (để loại bỏ phần dính)
+            if (candidates.length > 0) {
+                let freqs = {};
+                let maxFreq = 0;
+                for (let c of candidates) {
+                    freqs[c] = (freqs[c] || 0) + 1;
+                    if (freqs[c] > maxFreq) maxFreq = freqs[c];
                 }
+
+                let frequentCandidates = candidates.filter(c => freqs[c] === maxFreq);
+                // Trong các số xuất hiện nhiều nhất, lấy số ngắn nhất (VD: giữa '114104' và '114' -> Lấy '114')
+                denominator = frequentCandidates.reduce((a, b) => a.length <= b.length ? a : b);
             }
         }
 
-        // 2. Trường hợp tệ nhất không có dấu /: tìm hậu tố chung
-        if (!denominator && chunks.length > 1) {
-            let suffix = "";
-            let minLen = Math.min(...chunks.map(c => c.length));
-            for (let i = 1; i <= minLen; i++) {
-                const char0 = chunks[0][chunks[0].length - i];
-                let allMatch = true;
-                for (let j = 1; j < chunks.length; j++) {
-                    if (chunks[j][chunks[j].length - i] !== char0) {
-                        allMatch = false;
+        // Fallback: Không có dấu '/', tìm hậu tố chung (VD: "8277 3977" -> "77")
+        if (!denominator) {
+            let chunks = rawData.split(/\s+/).filter(c => c.length > 1);
+            if (chunks.length > 1) {
+                let suffix = "";
+                let minLen = Math.min(...chunks.map(c => c.length));
+                for (let i = 1; i <= minLen; i++) {
+                    const char0 = chunks[0][chunks[0].length - i];
+                    if (chunks.every(c => c[c.length - i] === char0)) {
+                        suffix = char0 + suffix;
+                    } else {
                         break;
                     }
                 }
-                if (allMatch) {
-                    suffix = char0 + suffix;
-                } else {
-                    break;
-                }
-            }
-            if (suffix.length > 0) {
-                denominator = suffix;
+                if (suffix.length > 0) denominator = suffix;
             }
         }
 
-        // 3. Tách các số còn lại và áp dụng luật sửa lỗi OCR
-        const results = [];
-        for (let c of chunks) {
-            let current = "";
-            let max = denominator || "";
+        // =====================================================================
+        // BƯỚC 2: TÁCH SỐ DÍNH LIỀN BẰNG CÁCH TRẢI PHẲNG (FLATTENING)
+        // =====================================================================
+        // Thêm khoảng trắng quanh '/' để tách nó ra thành 1 token độc lập
+        let spacedData = rawData.replace(/\//g, ' / ');
+        let initialTokens = spacedData.split(/\s+/).filter(c => c);
 
-            if (c.includes('/')) {
-                const parts = c.split('/');
-                current = parts[0];
-                if (!denominator) max = parts[1];
-            } else if (denominator && c.endsWith(denominator)) {
-                // Tách phần đầu dựa vào độ dài mẫu số
-                current = c.substring(0, c.length - denominator.length);
+        let expandedTokens = [];
+        for (let token of initialTokens) {
+            if (token === '/') continue; // Lọc bỏ dấu '/', ta chỉ lấy các con số
 
-                // Luật 1: vì số 0 đứng đầu nên 01 chỉ lấy số 0
-                if (current.startsWith('0') && current.length > 1) {
-                    current = '0';
+            if (denominator && token !== denominator) {
+                // Trường hợp 1: "114104" -> tách thành "114" (max) và "104" (current tiếp theo)
+                if (token.startsWith(denominator) && token.length > denominator.length) {
+                    expandedTokens.push(denominator);
+                    expandedTokens.push(token.slice(denominator.length));
+                }
+                // Trường hợp 2: "8277" -> tách thành "82" (current) và "77" (max)
+                else if (token.endsWith(denominator) && token.length > denominator.length) {
+                    expandedTokens.push(token.slice(0, token.length - denominator.length));
+                    expandedTokens.push(denominator);
+                } else {
+                    expandedTokens.push(token);
                 }
             } else {
-                current = c;
+                expandedTokens.push(token);
             }
+        }
+
+        // Lúc này expandedTokens là một mảng xen kẽ hoàn hảo: [current, max, current, max...]
+        // VD: [10, 114, 104, 114, 133, 114]
+
+        // =====================================================================
+        // BƯỚC 3: ÁP DỤNG LUẬT SỬA LỖI OCR CHO TỪNG CẶP
+        // =====================================================================
+        const results = [];
+        for (let i = 0; i < expandedTokens.length; i += 2) {
+            let current = expandedTokens[i];
+            // Nếu token cuối bị khuyết max, mượn lại denominator
+            let max = expandedTokens[i + 1] || denominator || "0";
+
+            // Luật 1: Vì số 0 đứng đầu nên 01 chỉ lấy số 0
+            if (current.startsWith('0') && current.length > 1) {
+                current = '0';
+            }
+
             if (!current) current = "0";
             if (!max) max = "0";
 
-            // Luật 2 (Áp dụng toàn cục): Bỏ số kế tiếp chen ngang do nhận diện rác nét nghiêng
+            // Luật 2: Sửa lỗi current quá lớn (Đã fix lỗi crash bằng cách ép lại thành String)
             while (current.length >= 2 && parseInt(current) >= parseInt(max) + 50 && parseInt(max) > 0) {
                 if (parseInt(current) / parseInt(max) <= 2) {
-                    current = parseInt(max) + 50;
-                }
-                else {
+                    current = (parseInt(max) + 50).toString(); // Quan trọng: Phải chuyển lại thành String
+                } else {
                     current = current.slice(0, -1);
                 }
             }
+
             results.push(`${current} ${max}`);
         }
 
@@ -988,6 +1052,8 @@ const readNumbersAndSave = async (driver, type) => {
         if (!parsedNumbers || parsedNumbers === "") {
             parsedNumbers = "0";
         }
+
+        console.log(`[OCR CLEAN] Output: "${parsedNumbers}"`);
 
         // Xuất file chính thức ghi đè dạng "x y a b c d"
         const dir = resolve(__dirname, `../../../../data_kho`);

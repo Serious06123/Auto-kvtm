@@ -6,6 +6,9 @@ dist/
 .vscode
 
 .venv/
+python_portable/
+ai_server/
+build_temp/
 data_kho/
 log/
 ocr_server.log
