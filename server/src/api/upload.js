@@ -1,6 +1,7 @@
 const multer = require('multer')
 const path = require('path')
 const fs = require('fs')
+const Jimp = require('jimp')
 
 // Configure multer storage
 const storage = multer.diskStorage({
@@ -12,7 +13,8 @@ const storage = multer.diskStorage({
         cb(null, uploadPath)
     },
     filename: function (req, file, cb) {
-        cb(null, file.originalname)
+        // Save temporarily under original name, will transcode later
+        cb(null, 'temp_' + Date.now() + path.extname(file.originalname))
     }
 })
 
@@ -74,27 +76,39 @@ const handleUpload = (req, res) => {
             return res.status(400).json({ error: 'No file uploaded' })
         }
 
-        // Rename file if necessary
-        const finalFileName = `${value}${path.extname(file.originalname)}`
+        const finalFileName = `${value}.png`
         const finalPath = path.resolve(file.destination, finalFileName)
 
-        if (file.filename !== finalFileName) {
-            fs.renameSync(file.path, finalPath)
-        }
+        // Read and transcode to PNG format
+        Jimp.read(file.path)
+            .then(image => {
+                return image.writeAsync(finalPath).then(() => {
+                    // Delete temporary uploaded file
+                    if (fs.existsSync(file.path)) {
+                        fs.unlinkSync(file.path)
+                    }
 
-        try {
-            const updated = updateConstFile(keyType, keyName, value)
-            if (!updated) {
-                return res.status(500).json({ error: 'Failed to update const.js (KeyType not found?)' })
-            }
-        } catch (error) {
-            return res.status(500).json({ error: 'Error processing const.js: ' + error.message })
-        }
+                    try {
+                        const updated = updateConstFile(keyType, keyName, value)
+                        if (!updated) {
+                            return res.status(500).json({ error: 'Failed to update const.js (KeyType not found?)' })
+                        }
+                    } catch (error) {
+                        return res.status(500).json({ error: 'Error processing const.js: ' + error.message })
+                    }
 
-        return res.json({
-            message: 'File uploaded and const.js updated',
-            data: { keyType, keyName, value, filename: finalFileName }
-        })
+                    return res.json({
+                        message: 'File uploaded and converted to PNG successfully',
+                        data: { keyType, keyName, value, filename: finalFileName }
+                    })
+                })
+            })
+            .catch(transcodeError => {
+                if (fs.existsSync(file.path)) {
+                    fs.unlinkSync(file.path)
+                }
+                return res.status(500).json({ error: 'Failed to convert image to PNG format: ' + transcodeError.message })
+            })
     })
 }
 
