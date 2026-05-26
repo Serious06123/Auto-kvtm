@@ -6,6 +6,19 @@ import VisualLogicEditor from './VisualLogicEditor'
 const { TextArea } = Input
 const { Option } = Select
 
+const slugify = (str) => {
+  if (!str) return ''
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[đĐ]/g, 'd')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/[\s-]+/g, '-')
+    .trim()
+    .replace(/^-+|-+$/g, '')
+}
+
 const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto }) => {
   const [name, setName] = useState('')
   const [key, setKey] = useState('')
@@ -309,7 +322,18 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto }) => {
   return (
     <Modal title={editingAuto ? 'Edit Auto' : 'Create Auto'} open={open} onCancel={() => onClose(false)} footer={null} width={1200}>
       <Space direction="vertical" style={{ width: '100%' }}>
-        <Input placeholder="Auto name" value={name} onChange={(e) => setName(e.target.value)} />
+        <Input 
+          placeholder="Auto name" 
+          value={name} 
+          onChange={(e) => {
+            const newVal = e.target.value
+            setName(newVal)
+            if (!editingAuto) {
+              const slug = slugify(newVal)
+              setKey(slug ? `${slug}_${Date.now()}` : '')
+            }
+          }} 
+        />
         <Input placeholder="Key (file name)" value={key} onChange={(e) => setKey(e.target.value)} readOnly={!!editingAuto} />
         <Select value={category} onChange={(v) => setCategory(v)} style={{ width: 200 }}>
           <Option value="vp">VP</Option>
