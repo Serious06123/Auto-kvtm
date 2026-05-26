@@ -252,7 +252,7 @@
             "name": "cao tra",
             "disabled": false,
             "order": 0,
-            "recommend": false,
+            "recommend": true,
             "category": "tree"
         },
         {
@@ -290,6 +290,30 @@
         {
             "key": "bantra",
             "name": "Bán trà",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category": "tree"
+        },
+        {
+            "key": "tuyet",
+            "name": "cao tuyet",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category": "tree"
+        },
+        {
+            "key": "selltuyet",
+            "name": "test bán tuyết",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category": "tree"
+        },
+        {
+            "key": "banduahau",
+            "name": "Banduahau",
             "disabled": false,
             "order": 0,
             "recommend": false,

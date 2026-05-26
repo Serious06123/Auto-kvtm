@@ -4,6 +4,14 @@ import cv2
 import traceback
 import threading
 import os
+import sys
+
+# Ép console Windows dùng UTF-8 để in tiếng Việt không bị sập (Fix UnicodeEncodeError)
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
+
 import base64
 import numpy as np
 import cv2
@@ -67,6 +75,20 @@ def run_ocr():
             # Màn hình dọc (isRotated = true)
             # Khung bị hoán đổi (Swapped crop): { x: 405, y: 17, w: 25, h: 225 }
             cropped = img_resized[17:242, 405:430]
+
+        # LƯU ẢNH CẮT GỌN (Dùng để đối chiếu OCR)
+        try:
+            device_id = data.get('device_id', 'unknown')
+            k_type = data.get('type', '1')
+            # Tìm đường dẫn repo (E:\Auto-kvtm) từ folder hiện tại (server/src/utils)
+            root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+            save_dir = os.path.join(root_dir, "data_kho")
+            if not os.path.exists(save_dir): os.makedirs(save_dir)
+            
+            save_path = os.path.join(save_dir, f"kho_{k_type}_img_{device_id}.png")
+            cv2.imwrite(save_path, cropped)
+        except:
+            pass # Không để việc lưu ảnh lỗi làm sập cả quá trình OCR
             
         gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
         

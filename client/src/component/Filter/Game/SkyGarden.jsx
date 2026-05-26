@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Checkbox, Col, Row, Select, Button, InputNumber, Flex, Tabs, Divider } from 'antd'
+import { Checkbox, Col, Row, Select, Button, InputNumber, Flex, Tabs, Divider, notification } from 'antd'
 import * as styles from './SkyGarden.module.css'
 import axios from 'axios'
 import CreateAutoModal from './CreateAutoModal'
-import { PlayCircleOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
+import { PlayCircleOutlined, EditOutlined, PlusOutlined, SyncOutlined } from '@ant-design/icons'
 
 const CATS = ['tree', 'vp', 'event', 'other'];
 
@@ -32,6 +32,45 @@ const SkyGarden = (props) => {
   const [autoOption, setAutoOption] = useState([])
   const [createOpen, setCreateOpen] = useState(false)
   const [editingAuto, setEditingAuto] = useState(null)
+
+  const [aiStatus, setAiStatus] = useState({ installed: false, status: 'idle', logs: [] })
+
+  const fetchAiStatus = (prevStatus) => {
+    axios.get('/api/ai-status').then(({ data }) => {
+      setAiStatus(data)
+      if (prevStatus === 'installing' && data.status === 'success') {
+        notification.success({
+          message: 'CÀI ĐẶT A.I THÀNH CÔNG',
+          description: 'Môi trường AI OCR đã được thiết lập thành công. Các tính năng nâng kho đã sẵn sàng!',
+          placement: 'bottomRight'
+        })
+      }
+    }).catch(err => console.error('Lỗi khi lấy trạng thái AI:', err))
+  }
+
+  useEffect(() => {
+    fetchAiStatus()
+  }, [])
+
+  useEffect(() => {
+    let interval
+    if (aiStatus.status === 'installing') {
+      interval = setInterval(() => {
+        fetchAiStatus('installing')
+      }, 2000)
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [aiStatus.status])
+
+  const handleInstallAi = () => {
+    axios.post('/api/install-ai').then(() => {
+      fetchAiStatus()
+    }).catch(err => {
+      alert(err.response?.data?.error || err.message)
+    })
+  }
 
   useEffect(() => {
     axios.get(`/api/gameOptions?game=${selectedGame}`).then(({ data }) => {
@@ -152,8 +191,33 @@ const SkyGarden = (props) => {
               <Col span={12}><Checkbox value="sellItems">Sell Items</Checkbox></Col>
               <Col span={12}><Checkbox value="removeItems">Remove Items</Checkbox></Col>
               <Col span={24}><Divider style={{ margin: '8px 0' }} /></Col>
-              <Col span={24}><Checkbox value="kho1">Auto nâng kho 1 (Beta)</Checkbox></Col>
-              <Col span={24}><Checkbox value="kho2">Auto nâng kho 2 (Beta)</Checkbox></Col>
+              <Col span={24}><Checkbox value="kho1" disabled={!aiStatus.installed}>Auto nâng kho 1 (Beta)</Checkbox></Col>
+              <Col span={24}><Checkbox value="kho2" disabled={!aiStatus.installed}>Auto nâng kho 2 (Beta)</Checkbox></Col>
+              {!aiStatus.installed && (
+                <Col span={24} style={{ color: '#ff4d4f', fontSize: 13, marginTop: 8, marginBottom: 8, background: '#fff1f0', border: '1px solid #ffccc7', padding: '12px', borderRadius: '6px' }}>
+                  <div style={{ fontWeight: 500, marginBottom: 8 }}>⚠️ Tính năng nâng kho yêu cầu cài đặt mô hình A.I OCR(Máy cần  tầm 1GB ổ đĩa trống).</div>
+                  {aiStatus.status === 'installing' ? (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#1890ff' }}>
+                        <span className="anticon-spin"><SyncOutlined spin /></span>
+                        <span>Đang tải và thiết lập môi trường A.I... Vui lòng đợi (5-15 phút)</span>
+                      </div>
+                      <div style={{ background: '#1e1e1e', color: '#a9b7c6', padding: '10px', borderRadius: '4px', maxHeight: '180px', overflowY: 'auto', fontFamily: 'Consolas, monospace', fontSize: '11px', whiteSpace: 'pre-wrap', border: '1px solid #323232' }}>
+                        {aiStatus.logs.length === 0 ? "Đang khởi tạo trình cài đặt..." : aiStatus.logs.join('')}
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <Button type="primary" danger size="small" onClick={handleInstallAi}>
+                        Cài đặt A.I ngay
+                      </Button>
+                      {aiStatus.status === 'failed' && (
+                        <span style={{ marginLeft: 8, color: '#ff4d4f', fontWeight: 'bold' }}>❌ Cài đặt thất bại. Vui lòng thử lại.</span>
+                      )}
+                    </div>
+                  )}
+                </Col>
+              )}
               {gameOption.includes('kho1') && !gameOption.includes('kho2') && (
                 <Col span={24} style={{ paddingLeft: 24, marginTop: -4 }}>
                   <Checkbox value="sellOtherKho" style={{ color: '#eb2f96' }}> Bán vp nâng cấp Kho 2 (Đá, Sơn Vàng, Đinh - 20 lần mỗi món)</Checkbox>

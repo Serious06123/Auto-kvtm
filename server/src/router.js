@@ -7,6 +7,7 @@ const { getRunningDevice, viewCurrentScreenDevice } = require('./api/device')
 const { startAuto, stopAuto, stopAllAuto } = require('./api/auto')
 const { getLogs, clearLogs } = require('./api/logs')
 const { handleUpload } = require('./api/upload')
+const { getAiStatus, installAi } = require('./api/ai')
 
 // default
 router.get('/', function (req, res) {
@@ -37,5 +38,9 @@ router.delete('/logs', clearLogs)
 
 // upload api
 router.post('/upload', handleUpload)
+
+// ai api
+router.get('/ai-status', getAiStatus)
+router.post('/install-ai', installAi)
 
 module.exports = router

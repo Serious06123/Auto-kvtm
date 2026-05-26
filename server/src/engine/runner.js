@@ -14,11 +14,16 @@ const checkOcrRequirement = (queue) => {
         });
 
         if (needOcr) {
-            core.ensurePythonServer().catch(() => { });
+            core.ensurePythonServer().catch((e) => { 
+                logErrMsg(`Failed to ensure Python Server: ${e}`);
+            });
         } else {
-            core.shutdownPythonServer().catch(() => { });
+            core.shutdownPythonServer().catch((e) => { 
+                logErrMsg(`Failed to shutdown Python Server: ${e}`);
+            });
         }
     } catch (e) {
+        logErrMsg(`Error checking OCR requirement: ${e}`);
     }
 }
 

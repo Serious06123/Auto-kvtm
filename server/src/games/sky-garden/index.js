@@ -87,7 +87,6 @@ const autoNangKho = async (driver, gameOptions = {}, loopIndex = 0) => {
     }
 
     if (sellList.length > 0) {
-        console.log(`[XẢ KHO] Phát hiện tràn kho! Tiến hành bán:`, sellList);
         let mutex = { value: 0 };
         let mutex2 = { value: 0 };
         // Phân loại gian hàng: Other (Dành cho đồ Nâng Cấp Kho)

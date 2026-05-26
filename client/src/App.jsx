@@ -74,8 +74,19 @@ const App = (props) => {
             <Layout className={styles.layout}>
                 <Header className={styles.header}>
                     <div className={styles.headerContent}>
-                        <h1 className={styles.title}>Auto Tools</h1>
-                        <span className={styles.subtitle}>Manager</span>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+                            <h1 className={styles.title}>Auto Tools</h1>
+                            <span className={styles.subtitle}>Manager</span>
+                        </div>
+                        <Button 
+                            type="dashed" 
+                            size="small" 
+                            icon={<SyncOutlined />} 
+                            onClick={() => handleCheckUpdate(true)}
+                            title="Vào kho xem có bản Update nào không"
+                        >
+                            Kiểm tra cập nhật
+                        </Button>
                     </div>
                 </Header>
                 <Content className={styles.content}>
@@ -89,17 +100,8 @@ const App = (props) => {
                         </div>
                     </div>
                 </Content>
-                <Footer className={styles.footer} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px' }}>
+                <Footer className={styles.footer}>
                     Auto Tool ©2024 - v{__APP_VERSION__}
-                    <Button 
-                        type="dashed" 
-                        size="small" 
-                        icon={<SyncOutlined />} 
-                        onClick={() => handleCheckUpdate(true)}
-                        title="Vào kho xem có bản Update nào không"
-                    >
-                        Kiểm tra cập nhật
-                    </Button>
                 </Footer>
             </Layout>
         </ConfigProvider>
