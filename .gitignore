@@ -12,3 +12,4 @@ build_temp/
 data_kho/
 log/
 ocr_server.log
+jdk_portable/
