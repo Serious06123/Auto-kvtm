@@ -10,6 +10,7 @@ const { handleUpload } = require('./api/upload')
 const { getAiStatus, installAi } = require('./api/ai')
 const { getImages, viewImage, updateImage, deleteImage } = require('./api/images')
 const { getCustomCategories, addCustomCategory } = require('./api/custom_categories')
+const { updateApp } = require('./api/updateApp')
 
 // default
 router.get('/', function (req, res) {
@@ -54,5 +55,8 @@ router.delete('/images', deleteImage)
 // custom categories api
 router.get('/customCategories', getCustomCategories)
 router.post('/customCategories', addCustomCategory)
+
+// update app api
+router.post('/updateApp', updateApp)
 
 module.exports = router

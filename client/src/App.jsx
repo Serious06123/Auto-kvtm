@@ -14,6 +14,37 @@ const UPDATE_CHECK_URL = 'https://raw.githubusercontent.com/Serious06123/Auto-kv
 
 const App = (props) => {
     const [refreshTime, setRefreshTime] = useState(moment().format('LTS'))
+    const [updating, setUpdating] = useState(false)
+
+    const performUpdate = async () => {
+        setUpdating(true)
+        const loadingKey = 'app-updating'
+        notification.open({
+            key: loadingKey,
+            message: 'ĐANG CẬP NHẬT',
+            description: 'Đang tải bản cập nhật mới nhất từ GitHub và build lại ứng dụng. Vui lòng không tắt tool...',
+            duration: 0,
+            icon: <SyncOutlined spin />
+        })
+
+        try {
+            const { data } = await axios.post('/api/updateApp')
+            notification.success({
+                message: 'CẬP NHẬT THÀNH CÔNG',
+                description: data.message || 'Vui lòng F5 trang web.',
+                duration: 10,
+            })
+        } catch (error) {
+            notification.error({
+                message: 'CẬP NHẬT THẤT BẠI',
+                description: error.response?.data?.error || error.message,
+                duration: 10,
+            })
+        } finally {
+            notification.destroy(loadingKey)
+            setUpdating(false)
+        }
+    }
 
     const handleCheckUpdate = async (manual = false) => {
         try {
@@ -22,11 +53,22 @@ const App = (props) => {
             const remoteVersion = response.data.version
 
             if (remoteVersion && remoteVersion !== __APP_VERSION__) {
+                const key = `open${Date.now()}`
+                const btn = (
+                    <Button type="primary" size="small" onClick={() => {
+                        notification.destroy(key)
+                        performUpdate()
+                    }} disabled={updating}>
+                        Cập nhật ngay
+                    </Button>
+                )
                 notification.info({
                     message: 'CÓ BẢN CẬP NHẬT MỚI',
-                    description: `Phiên bản mới (v${remoteVersion}) đã sẵn sàng để tải xuống. Phiên bản bạn đang cài: v${__APP_VERSION__}.`,
+                    description: `Phiên bản mới (v${remoteVersion}) đã sẵn sàng. Phiên bản bạn đang cài: v${__APP_VERSION__}.`,
                     placement: 'bottomRight',
-                    duration: 10,
+                    btn,
+                    key,
+                    duration: 0,
                 })
             } else if (manual) {
                 notification.success({
