@@ -74,7 +74,7 @@ class Runner {
             'appium:options': {
                 udid: deviceId,
                 automationName: 'UiAutomator2',
-                adbPort: 5038,
+                adbPort: 5037,
                 noReset: true,
                 disableWindowAnimation: true,
                 suppressKillServer: true,

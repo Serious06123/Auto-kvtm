@@ -6,7 +6,7 @@ cd "$PROJECT_ROOT"
 # Set ADB environment
 export ANDROID_HOME="$PROJECT_ROOT/bin"
 export PATH="$ANDROID_HOME/platform-tools:$PATH"
-export ADB_SERVER_SOCKET=tcp:127.0.0.1:5038
+export ADB_SERVER_PORT=5037
 
 # Setup adb symlink based on OS for Appium compatibility
 if [[ "$OSTYPE" == "darwin"* ]]; then
