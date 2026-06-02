@@ -165,8 +165,7 @@ const TreeKeys = {
     sen: 'cay-sen',
     mit: 'cay-mit',
     cuc: 'cay-cuc',
-    vietquat: 'cay-viet-quat',
-    huongduong: 'cay-huong-duong',
+    vietquat: 'cay-viet-quat',    huongduong: 'cay-hoa-huong-duong',
     tra: 'cay-tra',
     bi: 'cay-bi',
     dau: 'cay-dau',
@@ -218,8 +217,7 @@ const ProductTreeKeys = {
     bong: 'p-bong',
     bi: 'p-bi',
     cuc: 'p-cuc',
-    vietquat: 'p-viet-quat',
-    nho: 'p-nho',
+    vietquat: 'p-viet-quat',    nho: 'p-nho',
     lai: 'p-lai',
     sen: 'p-sen',
     huongduong: 'p-huong-duong',
@@ -263,8 +261,7 @@ const EventKeys = {
     kinh: 'event-kinh',
 }
 
-const AchievementKeys = {
-    GapNhauMoiNgay: 'gap-nhau-moi-ngay',
+const AchievementKeys = {    GapNhauMoiNgay: 'gap-nhau-moi-ngay',
 }
 
 const SlotPositions = {
@@ -286,6 +283,27 @@ const SlotPositions = {
     quayhang: 'quayhang',
     batbo: 'batbo',
 
+}
+
+// Merge custom constants dynamically from data/custom_const.json if it exists
+try {
+    const fs = require('fs')
+    const path = require('path')
+    const customConstPath = path.resolve(__dirname, '../../../../data/custom_const.json')
+    if (fs.existsSync(customConstPath)) {
+        const customData = JSON.parse(fs.readFileSync(customConstPath, 'utf8'))
+        if (customData.ItemKeys) Object.assign(ItemKeys, customData.ItemKeys)
+        if (customData.TreeKeys) Object.assign(TreeKeys, customData.TreeKeys)
+        if (customData.BugKeys) Object.assign(BugKeys, customData.BugKeys)
+        if (customData.ProductKeys) Object.assign(ProductKeys, customData.ProductKeys)
+        if (customData.ProductTreeKeys) Object.assign(ProductTreeKeys, customData.ProductTreeKeys)
+        if (customData.ProductMineralKeys) Object.assign(ProductMineralKeys, customData.ProductMineralKeys)
+        if (customData.OtherKeys) Object.assign(OtherKeys, customData.OtherKeys)
+        if (customData.EventKeys) Object.assign(EventKeys, customData.EventKeys)
+        if (customData.AchievementKeys) Object.assign(AchievementKeys, customData.AchievementKeys)
+    }
+} catch (e) {
+    // Ignore error to avoid blocking app startup
 }
 
 module.exports = {

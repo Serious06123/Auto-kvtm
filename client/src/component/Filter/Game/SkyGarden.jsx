@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Checkbox, Col, Row, Select, Button, InputNumber, Flex, Tabs, Divider, notification } from 'antd'
+import { Checkbox, Col, Row, Select, Button, InputNumber, Flex, Tabs, Divider, notification, message, Modal, Input } from 'antd'
 import * as styles from './SkyGarden.module.css'
 import axios from 'axios'
 import CreateAutoModal from './CreateAutoModal'
 import { PlayCircleOutlined, EditOutlined, PlusOutlined, SyncOutlined } from '@ant-design/icons'
 
-const CATS = ['tree', 'vp', 'event', 'other'];
+// const CATS is no longer static. We determine categories dynamically from the auto options.
 
 const normalizeCategory = (item) => {
   if (item.category) return item;
@@ -23,7 +23,7 @@ const SkyGarden = (props) => {
   const { selectedGame } = props
 
   const [selectedAuto, setSelectedAuto] = useState('') // gửi lên backend
-  const [selectedByCat, setSelectedByCat] = useState({ tree: null, vp: null, event: null, other: null })
+  const [selectedByCat, setSelectedByCat] = useState({})
 
   const [frequency, setFrequency] = useState(9999)
   const [quantity, setQuantity] = useState(9999)
@@ -34,6 +34,10 @@ const SkyGarden = (props) => {
   const [editingAuto, setEditingAuto] = useState(null)
 
   const [aiStatus, setAiStatus] = useState({ installed: false, status: 'idle', logs: [] })
+
+  const [customCategories, setCustomCategories] = useState([])
+  const [newCatModalOpen, setNewCatModalOpen] = useState(false)
+  const [newCatName, setNewCatName] = useState('')
 
   const fetchAiStatus = (prevStatus) => {
     axios.get('/api/ai-status').then(({ data }) => {
@@ -50,6 +54,9 @@ const SkyGarden = (props) => {
 
   useEffect(() => {
     fetchAiStatus()
+    axios.get('/api/customCategories')
+      .then(({ data }) => setCustomCategories(data))
+      .catch(err => console.error('Lỗi khi tải danh mục:', err))
   }, [])
 
   useEffect(() => {
@@ -76,18 +83,66 @@ const SkyGarden = (props) => {
     axios.get(`/api/gameOptions?game=${selectedGame}`).then(({ data }) => {
       const sorted = data.map(normalizeCategory).sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       setAutoOption(sorted)
-      setSelectedByCat({ tree: null, vp: null, event: null, other: null })
+      setSelectedByCat({})
       setSelectedAuto('')
     })
   }, [selectedGame])
 
+  const uniqueCats = useMemo(() => {
+    const catsSet = new Set([
+      'tree', 'vp', 'event', 'other',
+      ...customCategories,
+      ...autoOption.map(x => x.category || 'other')
+    ])
+    catsSet.delete('')
+    const order = ['tree', 'vp', 'event', 'other']
+    const sortedCats = Array.from(catsSet).sort((a, b) => {
+      const idxA = order.indexOf(a)
+      const idxB = order.indexOf(b)
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB
+      if (idxA !== -1) return -1
+      if (idxB !== -1) return 1
+      return a.localeCompare(b)
+    })
+    return sortedCats
+  }, [autoOption, customCategories])
+
+  const handleCreateCategory = () => {
+    if (!newCatName) return message.error('Category name cannot be empty')
+    const cleanName = newCatName.toLowerCase().replace(/[^a-z0-9_-]/g, '').trim()
+    if (!cleanName) return message.error('Invalid category name')
+    if (uniqueCats.includes(cleanName)) {
+        return message.error('Category already exists!')
+    }
+    axios.post('/api/customCategories', { category: cleanName })
+      .then(({ data }) => {
+        setCustomCategories(data.categories)
+        setNewCatName('')
+        setNewCatModalOpen(false)
+        message.success(`Category "${cleanName.toUpperCase()}" created successfully!`)
+      })
+      .catch(err => {
+        message.error('Failed to create category: ' + (err.response?.data?.error || err.message))
+      })
+  }
+
+  const handleEditTab = (targetKey, action) => {
+    if (action === 'add') {
+      setNewCatModalOpen(true)
+    }
+  }
+
   const optionsByCat = useMemo(() => {
-    const res = { tree: [], vp: [], event: [], other: [] }
+    const res = {}
+    for (const cat of uniqueCats) {
+      res[cat] = []
+    }
     for (const it of autoOption) {
-      if (CATS.includes(it.category)) res[it.category].push(it)
+      const cat = it.category || 'other'
+      if (res[cat]) res[cat].push(it)
     }
     return res
-  }, [autoOption])
+  }, [autoOption, uniqueCats])
 
   const toOption = (item) => ({
     value: item.key,
@@ -108,8 +163,7 @@ const SkyGarden = (props) => {
   }
 
   const onChangeByCat = (cat) => (val) => {
-    const next = { tree: null, vp: null, event: null, other: null, [cat]: val ?? null }
-    setSelectedByCat(next)
+    setSelectedByCat({ [cat]: val ?? null })
     setSelectedAuto(val || '')
   }
 
@@ -132,29 +186,26 @@ const SkyGarden = (props) => {
     props.runAuto(data)
   }
 
-  // Define tabs for categories
-  const items = [
-    {
-      key: 'tree',
-      label: 'Plants',
-      children: <Select {...commonSelectProps} placeholder="Select Plant Logic..." options={optionsByCat.tree.map(toOption)} value={selectedByCat.tree} onChange={onChangeByCat('tree')} />
-    },
-    {
-      key: 'vp',
-      label: 'Items',
-      children: <Select {...commonSelectProps} placeholder="Select Item Logic..." options={optionsByCat.vp.map(toOption)} value={selectedByCat.vp} onChange={onChangeByCat('vp')} />
-    },
-    {
-      key: 'event',
-      label: 'Events',
-      children: <Select {...commonSelectProps} placeholder="Select Event Logic..." options={optionsByCat.event.map(toOption)} value={selectedByCat.event} onChange={onChangeByCat('event')} />
-    },
-    {
-      key: 'other',
-      label: 'Others',
-      children: <Select {...commonSelectProps} placeholder="Other Logic..." options={optionsByCat.other.map(toOption)} value={selectedByCat.other} onChange={onChangeByCat('other')} />
-    }
-  ];
+  // Define tabs for categories dynamically
+  const items = useMemo(() => {
+    return uniqueCats.map(cat => {
+      const label = cat.toUpperCase()
+      return {
+        key: cat,
+        label: label,
+        closable: false,
+        children: (
+          <Select 
+            {...commonSelectProps} 
+            placeholder={`Select ${label} Logic...`} 
+            options={(optionsByCat[cat] || []).map(toOption)} 
+            value={selectedByCat[cat] || null} 
+            onChange={onChangeByCat(cat)} 
+          />
+        )
+      }
+    })
+  }, [uniqueCats, optionsByCat, selectedByCat])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -164,7 +215,13 @@ const SkyGarden = (props) => {
         {/* LEFT COLUMN: TASK SELECTION */}
         <Col xs={24} md={12}>
           <div style={{ marginBottom: 8, fontWeight: 500, color: '#666' }}>1. Select Task Category</div>
-          <Tabs defaultActiveKey="tree" items={items} type="card" />
+          <Tabs 
+            defaultActiveKey={uniqueCats[0] || 'tree'} 
+            items={items} 
+            type="editable-card" 
+            hideAdd={false}
+            onEdit={handleEditTab}
+          />
 
           <div style={{ marginTop: 24 }}>
             <div style={{ marginBottom: 8, fontWeight: 500, color: '#666' }}>2. Execution Loop</div>
@@ -264,6 +321,7 @@ const SkyGarden = (props) => {
       <CreateAutoModal
         open={createOpen}
         editingAuto={editingAuto}
+        categories={uniqueCats}
         onClose={(refresh) => {
           setCreateOpen(false);
           setEditingAuto(null);
@@ -274,6 +332,22 @@ const SkyGarden = (props) => {
         }}
         selectedGame={selectedGame}
       />
+
+      <Modal
+        title="Thêm nhóm mới (Task Category)"
+        open={newCatModalOpen}
+        onOk={handleCreateCategory}
+        onCancel={() => { setNewCatName(''); setNewCatModalOpen(false); }}
+        okText="Thêm"
+        cancelText="Hủy"
+      >
+        <Input 
+          placeholder="Nhập tên nhóm mới (ví dụ: bo, mini, sk)" 
+          value={newCatName} 
+          onChange={e => setNewCatName(e.target.value)} 
+          style={{ marginTop: '16px' }}
+        />
+      </Modal>
     </div>
   )
 }

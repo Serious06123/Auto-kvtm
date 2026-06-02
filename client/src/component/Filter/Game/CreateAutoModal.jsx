@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Modal, Button, Input, Select, InputNumber, Space, Divider, List, Form, Row, Col, Checkbox, Tabs, Radio } from 'antd'
+import { Modal, Button, Input, Select, InputNumber, Space, Divider, List, Form, Row, Col, Checkbox, Tabs, Radio, AutoComplete } from 'antd'
 import axios from 'axios'
 import VisualLogicEditor from './VisualLogicEditor'
 
@@ -19,7 +19,7 @@ const slugify = (str) => {
     .replace(/^-+|-+$/g, '')
 }
 
-const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto }) => {
+const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto, categories = [] }) => {
   const [name, setName] = useState('')
   const [key, setKey] = useState('')
   const [category, setCategory] = useState('vp')
@@ -335,11 +335,15 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto }) => {
           }} 
         />
         <Input placeholder="Key (file name)" value={key} onChange={(e) => setKey(e.target.value)} readOnly={!!editingAuto} />
-        <Select value={category} onChange={(v) => setCategory(v)} style={{ width: 200 }}>
-          <Option value="vp">VP</Option>
-          <Option value="tree">Tree</Option>
-          <Option value="event">Event</Option>
-          <Option value="other">Other</Option>
+        <Select 
+          style={{ width: 200 }}
+          value={category}
+          onChange={(v) => setCategory(v)}
+          placeholder="Task category"
+        >
+          {categories.map(cat => (
+            <Option key={cat} value={cat}>{cat.toUpperCase()}</Option>
+          ))}
         </Select>
         <Space>
           <span>Order:</span>

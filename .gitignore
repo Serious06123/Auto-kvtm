@@ -13,3 +13,6 @@ data_kho/
 log/
 ocr_server.log
 jdk_portable/
+data/auto_user.json
+data/custom_categories.json
+data/custom_const.json

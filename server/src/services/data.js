@@ -6,6 +6,7 @@ const filePath = {
     device: resolve(__dirname, '../../../data/device.json'),
     game: resolve(__dirname, '../../../data/game.json'),
     auto: resolve(__dirname, '../../../data/auto.json'),
+    autoUser: resolve(__dirname, '../../../data/auto_user.json'),
 }
 
 function getLogData() {
@@ -25,7 +26,33 @@ function getGamesData() {
 }
 
 function getAutoData() {
-    return JSON.parse(fs.readFileSync(filePath.auto, 'utf8'))
+    const defaults = JSON.parse(fs.readFileSync(filePath.auto, 'utf8'))
+    let userOnly = {}
+    if (fs.existsSync(filePath.autoUser)) {
+        try {
+            userOnly = JSON.parse(fs.readFileSync(filePath.autoUser, 'utf8'))
+        } catch (e) {
+            userOnly = {}
+        }
+    }
+    const merged = { ...defaults }
+    for (const [game, list] of Object.entries(userOnly)) {
+        if (!merged[game]) {
+            merged[game] = []
+        }
+        const defaultKeys = new Set((merged[game] || []).map(x => x.key))
+        for (const item of list) {
+            if (!defaultKeys.has(item.key)) {
+                merged[game].push(item)
+            } else {
+                const idx = merged[game].findIndex(x => x.key === item.key)
+                if (idx !== -1) {
+                    merged[game][idx] = item
+                }
+            }
+        }
+    }
+    return merged
 }
 
 function readFileData(path) {
@@ -41,7 +68,17 @@ function writeDeviceData(object) {
 }
 
 function writeAutoData(object) {
-    fs.writeFileSync(filePath.auto, JSON.stringify(object, null, 4))
+    let defaults = {}
+    if (fs.existsSync(filePath.auto)) {
+        defaults = JSON.parse(fs.readFileSync(filePath.auto, 'utf8'))
+    }
+    const userOnly = {}
+    for (const [game, list] of Object.entries(object)) {
+        const defaultList = defaults[game] || []
+        const defaultKeys = new Set(defaultList.map(x => x.key))
+        userOnly[game] = list.filter(item => !defaultKeys.has(item.key))
+    }
+    fs.writeFileSync(filePath.autoUser, JSON.stringify(userOnly, null, 4))
 }
 
 module.exports = {

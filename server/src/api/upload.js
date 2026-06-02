@@ -21,42 +21,21 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage })
 
 const updateConstFile = (keyType, keyName, keyValue) => {
-    const constFilePath = path.resolve(__dirname, '../games/sky-garden/const.js')
-    let content = fs.readFileSync(constFilePath, 'utf8')
-
-    const regex = new RegExp(`const\\s+${keyType}\\s*=\\s*{([\\s\\S]*?)}`, 'm')
-    const match = content.match(regex)
-
-    if (match) {
-        // Find the last closing brace of the object to insert before it
-        const blockStartIndex = match.index
-        const fullBlock = match[0]
-        const closingBraceIndex = fullBlock.lastIndexOf('}')
-
-        if (closingBraceIndex !== -1) {
-            // Quote keyName if it contains dashes or other special characters
-            const safeKeyName = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(keyName) ? keyName : `'${keyName}'`
-            let newEntry = `    ${safeKeyName}: '${keyValue}',`
-
-            // Check if key already exists in the block
-            const keyRegex = new RegExp(`^\\s*${safeKeyName}\\s*:\\s*['"].*['"],?`, 'm')
-
-            if (keyRegex.test(fullBlock)) {
-                // Replace existing key
-                const newBlock = fullBlock.replace(keyRegex, newEntry)
-                content = content.replace(fullBlock, newBlock)
-            } else {
-                // Append new key
-                newEntry = `    ${safeKeyName}: '${keyValue}',\n`
-                const newBlock = fullBlock.slice(0, closingBraceIndex) + newEntry + fullBlock.slice(closingBraceIndex)
-                content = content.replace(fullBlock, newBlock)
-            }
-
-            fs.writeFileSync(constFilePath, content, 'utf8')
-            return true
+    const customConstPath = path.resolve(__dirname, '../../../data/custom_const.json')
+    let customData = {}
+    if (fs.existsSync(customConstPath)) {
+        try {
+            customData = JSON.parse(fs.readFileSync(customConstPath, 'utf8'))
+        } catch (e) {
+            customData = {}
         }
     }
-    return false
+    if (!customData[keyType]) {
+        customData[keyType] = {}
+    }
+    customData[keyType][keyName] = keyValue
+    fs.writeFileSync(customConstPath, JSON.stringify(customData, null, 4), 'utf8')
+    return true
 }
 
 const handleUpload = (req, res) => {

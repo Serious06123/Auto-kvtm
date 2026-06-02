@@ -39,8 +39,7 @@ const readAuto = async (req, res, next) => {
     try {
         const { key } = req.query
         if (!key) return res.status(400).json({ error: 'key required' })
-        const dataPath = path.resolve(__dirname, '../../../data/auto.json')
-        let data = JSON.parse(fs.readFileSync(dataPath, 'utf8'))
+        const data = getAutoData()
         const list = (data['sky-garden'] || [])
         const meta = list.find((x) => x.key === key)
         if (!meta) return res.status(404).json({ error: 'auto not found' })
@@ -155,8 +154,7 @@ const createAuto = async (req, res, next) => {
         fs.writeFileSync(filePath, content)
 
         // update data/auto.json
-        const dataPath = path.resolve(__dirname, '../../../data/auto.json')
-        let data = JSON.parse(fs.readFileSync(dataPath, 'utf8'))
+        let data = getAutoData()
         if (!data['sky-garden']) data['sky-garden'] = []
         data['sky-garden'].push({ key, name, disabled: false, order: 0, recommend: false, category })
         writeAutoData(data)
@@ -245,8 +243,7 @@ const updateAuto = async (req, res, next) => {
         fs.writeFileSync(filePath, content)
 
         // update data/auto.json (find by key and update fields)
-        const dataPath = path.resolve(__dirname, '../../../data/auto.json')
-        let data = JSON.parse(fs.readFileSync(dataPath, 'utf8'))
+        let data = getAutoData()
         if (!data['sky-garden']) data['sky-garden'] = []
         const idx = data['sky-garden'].findIndex((x) => x.key === key)
         if (idx === -1) {

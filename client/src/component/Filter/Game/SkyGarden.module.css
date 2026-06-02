@@ -26,3 +26,14 @@
 @media only screen and (max-width: 1200px) {
   .selectAuto { width: 180px !important; }
 }
+
+:global(.ant-tabs-nav-wrap) {
+  overflow-x: auto !important;
+}
+:global(.ant-tabs-nav-wrap::-webkit-scrollbar) {
+  height: 4px;
+}
+:global(.ant-tabs-nav-wrap::-webkit-scrollbar-thumb) {
+  background: #ccc;
+  border-radius: 2px;
+}

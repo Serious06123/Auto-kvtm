@@ -8,6 +8,8 @@ const { startAuto, stopAuto, stopAllAuto } = require('./api/auto')
 const { getLogs, clearLogs } = require('./api/logs')
 const { handleUpload } = require('./api/upload')
 const { getAiStatus, installAi } = require('./api/ai')
+const { getImages, viewImage, updateImage, deleteImage } = require('./api/images')
+const { getCustomCategories, addCustomCategory } = require('./api/custom_categories')
 
 // default
 router.get('/', function (req, res) {
@@ -42,5 +44,15 @@ router.post('/upload', handleUpload)
 // ai api
 router.get('/ai-status', getAiStatus)
 router.post('/install-ai', installAi)
+
+// images api
+router.get('/images', getImages)
+router.get('/viewImage', viewImage)
+router.put('/images', updateImage)
+router.delete('/images', deleteImage)
+
+// custom categories api
+router.get('/customCategories', getCustomCategories)
+router.post('/customCategories', addCustomCategory)
 
 module.exports = router
