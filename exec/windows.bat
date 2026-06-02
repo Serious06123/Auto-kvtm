@@ -12,6 +12,7 @@ set "CURRENT_DIR=%~dp0"
 for %%i in ("%CURRENT_DIR%..") do set "PROJECT_ROOT=%%~fi"
 set "ANDROID_HOME=%PROJECT_ROOT%\bin"
 set "PATH=%ANDROID_HOME%\platform-tools;%PATH%"
+set ADB_SERVER_SOCKET=tcp:localhost:5038
 
 REM Kiem tra Java he thong
 java -version >nul 2>&1
