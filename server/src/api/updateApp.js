@@ -29,10 +29,13 @@ function updateApp(req, res) {
     } else {
         // --- CASE 2: ZIP Installation (No Git) ---
         try {
-            const updateBatPath = path.resolve(projectRoot, 'update.bat')
+            const isWindows = process.platform === 'win32'
             
-            // Create update.bat script to download, unzip, replace files, compile, and restart
-            const batContent = `@echo off
+            if (isWindows) {
+                const updateBatPath = path.resolve(projectRoot, 'update.bat')
+                
+                // Create update.bat script to download, unzip, replace files, compile, and restart
+                const batContent = `@echo off
 echo Dang dung tool de cho ung dung thoat hoan toan...
 timeout /t 3 /nobreak >nul
 
@@ -68,15 +71,72 @@ start exec/windows.bat
 echo [!] Hoan tat cap nhat!
 (goto) 2>nul & del "%~f0"
 `
-            fs.writeFileSync(updateBatPath, batContent, 'utf8')
+                fs.writeFileSync(updateBatPath, batContent, 'utf8')
 
-            // Spawn the process detached so it survives parent death
-            const child = spawn('cmd.exe', ['/c', 'start', 'update.bat'], {
-                cwd: projectRoot,
-                detached: true,
-                stdio: 'ignore'
-            })
-            child.unref()
+                // Spawn the process detached so it survives parent death
+                const child = spawn('cmd.exe', ['/c', 'start', 'update.bat'], {
+                    cwd: projectRoot,
+                    detached: true,
+                    stdio: 'ignore'
+                })
+                child.unref()
+            } else {
+                // macOS / Linux Update Script
+                const updateShPath = path.resolve(projectRoot, 'update.sh')
+                const shContent = `#!/bin/bash
+echo "Dang dung tool de cho ung dung thoat hoan toan..."
+sleep 3
+
+echo "[1/4] Dang tai ban cap nhat moi nhat tu GitHub..."
+curl -L -o update.zip 'https://github.com/Serious06123/Auto-kvtm/archive/refs/heads/main.zip' || wget -O update.zip 'https://github.com/Serious06123/Auto-kvtm/archive/refs/heads/main.zip'
+
+if [ ! -f update.zip ]; then
+    echo "[LOI] Khong the tai ban cap nhat. Vui loi kiem tra mang!"
+    exit 1
+fi
+
+echo "[2/4] Dang giai nen ban cap nhat..."
+unzip -o update.zip -d update_temp
+
+echo "[3/4] Dang ghi de cac file he thong..."
+cp -rf update_temp/Auto-kvtm-main/* .
+
+echo "[!] Xoa file tam..."
+rm -f update.zip
+rm -rf update_temp
+
+echo "[4/4] Dang bien dich ma nguon giao dien (Webpack)..."
+npm run release
+
+echo "[!] Khoi dong lai ung dung..."
+if [ "$(uname)" == "Darwin" ]; then
+    # macOS: Open new Terminal window
+    osascript -e "tell app \\"Terminal\\" to do script \\"cd '$(pwd)' && bash exec/unix.command\\""
+else
+    # Linux: Try common terminals or run background
+    if command -v x-terminal-emulator >/dev/null 2>&1; then
+        x-terminal-emulator -e "bash exec/unix.command" &
+    elif command -v gnome-terminal >/dev/null 2>&1; then
+        gnome-terminal -- bash exec/unix.command &
+    else
+        bash exec/unix.command &
+    fi
+fi
+
+echo "[!] Hoan tat cap nhat!"
+rm -f "$0"
+`
+                fs.writeFileSync(updateShPath, shContent, 'utf8')
+                fs.chmodSync(updateShPath, '755') // Grant execute permissions
+
+                // Spawn the process detached
+                const child = spawn('sh', ['./update.sh'], {
+                    cwd: projectRoot,
+                    detached: true,
+                    stdio: 'ignore'
+                })
+                child.unref()
+            }
 
             res.json({
                 success: true,
