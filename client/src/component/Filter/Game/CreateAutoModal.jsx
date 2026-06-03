@@ -198,7 +198,7 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto, categories 
           </Col>
           <Col span={12}>
             <Form.Item label="Thu hoạch tầng cuối mấy cây">
-              <InputNumber min={1} max={5} value={funcParams.pot} onChange={(v) => setFuncParams({ ...funcParams, pot: v })} />
+              <InputNumber min={0} max={5} value={funcParams.pot} onChange={(v) => setFuncParams({ ...funcParams, pot: v })} />
             </Form.Item>
           </Col>
         </Row>
@@ -222,13 +222,13 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto, categories 
             </Col>
             <Col span={8}>
               <Form.Item label="Tầng cuối trồng mấy cây">
-                <InputNumber min={1} max={5} value={funcParams.pot} onChange={(v) => setFuncParams({ ...funcParams, pot: v })} />
+                <InputNumber min={0} max={5} value={funcParams.pot} onChange={(v) => setFuncParams({ ...funcParams, pot: v })} />
               </Form.Item>
             </Col>
           </Row>
           <Row>
             <Col span={24}>
-              <Form.Item label="Direction">
+              <Form.Item label="Hướng (Direction)">
                 <Select value={funcParams.isRight !== false} onChange={v => setFuncParams({ ...funcParams, isRight: v })}>
                   <Option value={true}>Phải (Mặc định)</Option>
                   <Option value={false}>Trái</Option>
@@ -295,8 +295,8 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto, categories 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, marginBottom: 8 }}>
         <Divider orientation="left" style={{ margin: 0, width: 'auto', minWidth: '150px' }}>{title}</Divider>
         <Radio.Group value={isVisual ? 'visual' : 'code'} onChange={e => setIsVisual(e.target.value === 'visual')} buttonStyle="solid" size="small">
-          <Radio.Button value="visual">Visual</Radio.Button>
-          <Radio.Button value="code">Raw Code</Radio.Button>
+          <Radio.Button value="visual">Trực quan (Visual)</Radio.Button>
+          <Radio.Button value="code">Mã nguồn (Code)</Radio.Button>
         </Radio.Group>
       </div>
       {isVisual ? (
@@ -320,10 +320,10 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto, categories 
   )
 
   return (
-    <Modal title={editingAuto ? 'Edit Auto' : 'Create Auto'} open={open} onCancel={() => onClose(false)} footer={null} width={1200}>
+    <Modal title={editingAuto ? 'Chỉnh sửa Auto' : 'Tạo Auto mới'} open={open} onCancel={() => onClose(false)} footer={null} width={1200}>
       <Space direction="vertical" style={{ width: '100%' }}>
         <Input 
-          placeholder="Auto name" 
+          placeholder="Tên Auto" 
           value={name} 
           onChange={(e) => {
             const newVal = e.target.value
@@ -334,21 +334,21 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto, categories 
             }
           }} 
         />
-        <Input placeholder="Key (file name)" value={key} onChange={(e) => setKey(e.target.value)} readOnly={!!editingAuto} />
+        <Input placeholder="Mã (tên file)" value={key} onChange={(e) => setKey(e.target.value)} readOnly={!!editingAuto} />
         <Select 
           style={{ width: 200 }}
           value={category}
           onChange={(v) => setCategory(v)}
-          placeholder="Task category"
+          placeholder="Chọn nhóm nhiệm vụ"
         >
           {categories.map(cat => (
             <Option key={cat} value={cat}>{cat.toUpperCase()}</Option>
           ))}
         </Select>
         <Space>
-          <span>Order:</span>
-          <InputNumber value={order} onChange={setOrder} />
-          <Checkbox checked={recommend} onChange={(e) => setRecommend(e.target.checked)}>Recommend</Checkbox>
+          <span>Thứ tự sắp xếp (Order):</span>
+          <InputNumber min={0} value={order} onChange={setOrder} />
+          <Checkbox checked={recommend} onChange={(e) => setRecommend(e.target.checked)}>Khuyên dùng</Checkbox>
         </Space>
         <div>
           <span>Bán sau khi chạy  </span>
@@ -360,9 +360,9 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto, categories 
           <InputNumber min={0} max={9999} value={sleepSeconds} onChange={(v) => setSleepSeconds(v)} />
         </div>
 
-        <Divider orientation="left">Function & Parameters</Divider>
+        <Divider orientation="left">Chức năng & Tham số</Divider>
         <Form layout="vertical">
-          <Form.Item label="Select Function">
+          <Form.Item label="Chọn chức năng">
             <Row gutter={8}>
               {['goUp', 'goDown', 'goDownLast', 'makeItems', 'sleep', 'harvestTrees', 'plantTrees', 'sellItems'].map(func => (
                 <Col key={func}>
@@ -390,15 +390,15 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto, categories 
             </Row>
           </Form.Item>
           {renderParamInputs()}
-          <Button type="primary" onClick={addFunction} disabled={!selectedFunc}>Add Function</Button>
+          <Button type="primary" onClick={addFunction} disabled={!selectedFunc}>Thêm chức năng</Button>
         </Form>
 
-        {renderSection('Production Logic', logic, setLogic, prodVisual, setProdVisual)}
-        {renderSection('Sell Logic', sellLogic, setSellLogic, sellVisual, setSellVisual)}
+        {renderSection('Logic sản xuất', logic, setLogic, prodVisual, setProdVisual)}
+        {renderSection('Logic bán hàng', sellLogic, setSellLogic, sellVisual, setSellVisual)}
 
         <Space style={{ marginTop: 16 }}>
-          <Button type="primary" onClick={submit}>{editingAuto ? 'Update' : 'Create'}</Button>
-          <Button onClick={() => onClose(false)}>Cancel</Button>
+          <Button type="primary" onClick={submit}>{editingAuto ? 'Cập nhật' : 'Tạo mới'}</Button>
+          <Button onClick={() => onClose(false)}>Hủy bỏ</Button>
         </Space>
       </Space>
     </Modal>
