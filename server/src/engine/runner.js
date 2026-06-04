@@ -2,6 +2,7 @@ const moment = require('moment');
 const { logErrMsg } = require('../services/log');
 const { connectAppium } = require('./webdriverio');
 const { writeLogData, getLogData } = require('../services/data');
+const { ADBHelper } = require('./adb');
 
 const checkOcrRequirement = (queue) => {
     try {
@@ -68,6 +69,11 @@ class Runner {
         }
         writeLogData(logData);
 
+        // Check if Appium helper apps are already installed
+        const hasSettings = await ADBHelper.isPackageInstalled(deviceId, 'io.appium.settings');
+        const hasUiAutomator = await ADBHelper.isPackageInstalled(deviceId, 'io.appium.uiautomator2.server');
+        const isAppiumInstalled = hasSettings && hasUiAutomator;
+
         // Appium capabilities
         const capabilities = {
             platformName: 'Android',
@@ -86,8 +92,8 @@ class Runner {
                 ignoreUnimportantViews: true,
                 disableAndroidWatchers: true,
                 enforceAppInstall: false,
-                skipDeviceInitialization: false,
-                skipServerInstallation: false,
+                skipDeviceInitialization: isAppiumInstalled,
+                skipServerInstallation: isAppiumInstalled,
                 sessionOverride: true,
                 resetKeyboard: true,
                 disableSuppressAccessibilityService: true,

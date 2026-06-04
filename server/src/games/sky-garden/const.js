@@ -7,17 +7,17 @@ const DefaultProduct = { x: 40.5, y: 72.5 }
 const FirstRowSlotList = [
     { x: 39.0, y: 94.8 }, //0
     // { x: 37, y: 90.7 },
-    // { x: 37.2, y: 90.7 }, 
+    // { x: 37.2, y: 90.7 },
     { x: 46.5, y: 94.8 }, //1
-    // { x: 46.8, y: 90.7 }, 
+    // { x: 46.8, y: 90.7 },
     { x: 55.6, y: 94.8 }, //2
-    // { x: 56, y: 90.7 },  
+    // { x: 56, y: 90.7 },
     { x: 61.6, y: 94.8 }, //3
     // { x: 64, y: 90.7 },
     { x: 69.4, y: 94.8 }, //4
-    // { x: 73.8, y: 90.7 }, 
-    { x: 76.6, y: 94.8 },  //5
-    // { x: 82, y: 90.7 },  
+    // { x: 73.8, y: 90.7 },
+    { x: 76.6, y: 94.8 }, //5
+    // { x: 82, y: 90.7 },
     // { x: 84.0, y: 90.7},
 ]
 
@@ -35,7 +35,6 @@ const SecondRowSlotList = [
     { x: 76.6, y: 72.0 },
     // { x: 82, y: 65.0 },
     // { x: 84.0, y: 90.7},
-
 ]
 
 const ThirdRowSlotList = [
@@ -56,17 +55,17 @@ const ThirdRowSlotList = [
 const FourthRowSlotList = [
     { x: 39.0, y: 28.7 }, //0
     // { x: 37, y: 13.0 },
-    // { x: 37.2, y: 13.0 }, 
+    // { x: 37.2, y: 13.0 },
     { x: 46.5, y: 28.7 }, //1
-    // { x: 46.8, y: 13.0 }, 
+    // { x: 46.8, y: 13.0 },
     { x: 55.6, y: 28.7 }, //2
-    // { x: 56, y: 13.0 },  
+    // { x: 56, y: 13.0 },
     { x: 61.6, y: 28.7 }, //3
     // { x: 64, y: 13.0 },
     { x: 69.4, y: 28.7 }, //4
-    // { x: 73.8, y: 13.0 }, 
-    { x: 76.6, y: 28.7 },  //5
-    // { x: 82, y: 13.0 },  
+    // { x: 73.8, y: 13.0 },
+    { x: 76.6, y: 28.7 }, //5
+    // { x: 82, y: 13.0 },
     // { x: 84.0, y: 13.0},
 ]
 const PlantSlotList = [
@@ -148,6 +147,8 @@ const ItemKeys = {
     kc: 'kc',
     fullkho: 'full-kho',
     chuaqc: 'chua-qc',
+    xoavp: 'xoa-vp',
+    dongy2: 'dong-y-2',
 }
 
 const TreeKeys = {
@@ -165,12 +166,12 @@ const TreeKeys = {
     sen: 'cay-sen',
     mit: 'cay-mit',
     cuc: 'cay-cuc',
-    vietquat: 'cay-viet-quat',    huongduong: 'cay-hoa-huong-duong',
+    vietquat: 'cay-viet-quat',
+    huongduong: 'cay-hoa-huong-duong',
     tra: 'cay-tra',
     bi: 'cay-bi',
     dau: 'cay-dau',
     duas: 'cay-duas',
-    
 }
 
 const BugKeys = {
@@ -217,7 +218,8 @@ const ProductTreeKeys = {
     bong: 'p-bong',
     bi: 'p-bi',
     cuc: 'p-cuc',
-    vietquat: 'p-viet-quat',    nho: 'p-nho',
+    vietquat: 'p-viet-quat',
+    nho: 'p-nho',
     lai: 'p-lai',
     sen: 'p-sen',
     huongduong: 'p-huong-duong',
@@ -261,7 +263,8 @@ const EventKeys = {
     kinh: 'event-kinh',
 }
 
-const AchievementKeys = {    GapNhauMoiNgay: 'gap-nhau-moi-ngay',
+const AchievementKeys = {
+    GapNhauMoiNgay: 'gap-nhau-moi-ngay',
 }
 
 const SlotPositions = {
@@ -282,7 +285,6 @@ const SlotPositions = {
     cam: 'cam',
     quayhang: 'quayhang',
     batbo: 'batbo',
-
 }
 
 // Merge custom constants dynamically from data/custom_const.json if it exists

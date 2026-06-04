@@ -52,7 +52,7 @@ const openGame = async (driver) => {
     }
     count = 0
     while (!gamePosition) {
-        if (count > 20) break;
+        if (count > 20) break
         await driver.tap(97.1, 97.1)
         await driver.sleep(1)
         await driver.tap(85.9, 91.9)
@@ -61,7 +61,7 @@ const openGame = async (driver) => {
         await driver.sleep(1)
         count++
     }
-    count = 0;
+    count = 0
     await driver.tap(gamePosition.x, gamePosition.y)
     await driver.sleep(15)
 
@@ -76,7 +76,7 @@ const openGame = async (driver) => {
     await driver.tap(59.2, 62.5)
     await driver.sleep(1)
     while (!kc) {
-        if (count > 5) return await openGame(driver);
+        if (count > 5) return await openGame(driver)
         kc = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.shopGem), SlotPositions.p3p4)
         count++
     }
@@ -92,7 +92,7 @@ const openGame = async (driver) => {
 }
 
 const openChests = async (driver) => {
-    await goDownLast(driver);
+    await goDownLast(driver)
     let isFound = await driver.haveItemOnScreen(_getItemPath(ItemKeys.chest), SlotPositions.moruong)
     if (isFound) {
         await driver.tap(37.0, 62.7)
@@ -109,8 +109,7 @@ const openChests = async (driver) => {
         }
         //back to game
         await backToGame(driver)
-    }
-    else {
+    } else {
         isFound = await driver.haveItemOnScreen(_getItemPath(ItemKeys.chest1), SlotPositions.moruong)
         if (isFound) {
             await driver.tap(35.0, 54.7)
@@ -128,7 +127,6 @@ const openChests = async (driver) => {
             //back to game
             await backToGame(driver)
         }
-
     }
     await backToGame(driver)
 }
@@ -173,7 +171,7 @@ const goDownLast = async (driver) => {
 
 const harvestTrees = async (driver, mutex, floor = 4, pot = 5, sukien = false) => {
     if (mutex.value >= 1) {
-        return;
+        return
     }
     const { x, y } = DefaultBasket
     const pointList = [{ duration: 0, x: x, y: y }]
@@ -221,10 +219,10 @@ const harvestTrees = async (driver, mutex, floor = 4, pot = 5, sukien = false) =
             await backToGame(driver)
             if (!(await haveshoponscreen(driver))) {
                 await openGame(driver)
-                mutex.value = 1;
+                mutex.value = 1
                 return
             }
-            break;
+            break
         }
         await driver.tap(36.8, 91.3)
         await driver.sleep(0.1)
@@ -236,24 +234,23 @@ const harvestTrees = async (driver, mutex, floor = 4, pot = 5, sukien = false) =
     }
 }
 
-
 const findbugonfloor = async (driver, BugKeys) => {
-    await goFriendHouse(driver, 0);
+    await goFriendHouse(driver, 0)
     await driver.sleep(1)
     for (let i = 0; i < 10; i++) {
-        let count = 0;
-        let findbug = null;
+        let count = 0
+        let findbug = null
         await goUp(driver)
         await driver.sleep(1)
         while (count < 5 && !findbug) {
             findbug = await driver.getCoordinateItemOnScreen(_getItemPath(BugKeys), SlotPositions.batbo)
-            count++;
+            count++
         }
         if (!findbug) {
             continue
         }
         findbug = _getSlotNearest(findbug)
-        await driver.tap(findbug.x, findbug.y);
+        await driver.tap(findbug.x, findbug.y)
         let votxanh = await driver.haveItemOnScreen(_getItemPath(ItemKeys.votxanh), SlotPositions.p3p4)
         const pointList = [{ duration: 0, x: votxanh.x, y: votxanh.y }]
         const duration = 200 * DelayTime
@@ -275,22 +272,22 @@ const findbugonfloor = async (driver, BugKeys) => {
 }
 
 const getPotNearest = async (driver, BugKeys) => {
-    await goFriendHouse(driver, 0);
+    await goFriendHouse(driver, 0)
     await driver.sleep(1)
     for (let i = 0; i < 10; i++) {
-        let count = 0;
-        let findbug = null;
+        let count = 0
+        let findbug = null
         await goUp(driver)
         await driver.sleep(1)
         while (count < 20 && !findbug) {
             findbug = await driver.getCoordinateItemOnScreen(_getItemPath(BugKeys), SlotPositions.batbo)
-            count++;
+            count++
         }
         if (!findbug) {
             continue
         }
         findbug = await _getSlotNearest(findbug)
-        await driver.tap(findbug.x, findbug.y);
+        await driver.tap(findbug.x, findbug.y)
         let votxanh = await driver.haveItemOnScreen(_getItemPath(ItemKeys.votxanh), SlotPositions.p3p4)
         const pointList = [{ duration: 0, x: votxanh.x, y: votxanh.y }]
         const duration = 200 * DelayTime
@@ -321,14 +318,14 @@ const findTreeOnScreen = async (driver, treeKey, isFindNext = true) => {
     return slotItem
 }
 const plantTrees = async (driver, mutex, treeKey, floor = 4, pot = 5, isFindNext = true, sukien = false) => {
-    if (mutex.value >= 1) return;
+    if (mutex.value >= 1) return
     await driver.tap(36.8, 91.3)
     await driver.sleep(0.1)
     let slotTree = await findTreeOnScreen(driver, treeKey, isFindNext)
     if (!slotTree) {
         if (!(await haveshoponscreen(driver))) {
             await openGame(driver)
-            mutex.value = 1;
+            mutex.value = 1
             return
         }
         await harvestTrees(driver, mutex)
@@ -387,16 +384,16 @@ const plantTrees = async (driver, mutex, treeKey, floor = 4, pot = 5, isFindNext
 }
 const makeItems = async (driver, floor = 1, slot = 0, number = 1, mutex) => {
     if (mutex.value >= 1) {
-        return;
+        return
     }
-    const position = { x: 26.3, y: floor === 1 ? 93.6 : 67.3 };
+    const position = { x: 26.3, y: floor === 1 ? 93.6 : 67.3 }
 
     for (let i = 0; i < 12; i++) {
-        await driver.tap(position.x, position.y);
-        await driver.sleep(0.1);
+        await driver.tap(position.x, position.y)
+        await driver.sleep(0.1)
     }
 
-    let count = 0;
+    let count = 0
     while (!(await driver.haveItemOnScreen(_getItemPath(ItemKeys.emptyProductionSlot), SlotPositions.p3))) {
         await driver.tap(position.x, position.y)
         await driver.sleep(0.1)
@@ -405,31 +402,31 @@ const makeItems = async (driver, floor = 1, slot = 0, number = 1, mutex) => {
             await backToGame(driver)
             await driver.tap(position.x, position.y)
             await driver.sleep(1)
-            if ((await driver.haveItemOnScreen(_getItemPath(ItemKeys.fullkho), SlotPositions.p1))) {
-                mutex.value = 1;
+            if (await driver.haveItemOnScreen(_getItemPath(ItemKeys.fullkho), SlotPositions.p1)) {
+                mutex.value = 1
                 await backToGame(driver)
-                break;
+                break
             }
             await backToGame(driver)
             await driver.sleep(0.5)
             await driver.tap(position.x, position.y)
             await driver.sleep(0.1)
-            if ((await driver.haveItemOnScreen(_getItemPath(ItemKeys.emptyProductionSlot), SlotPositions.p3))) {
-                count = 9;
-                continue;
+            if (await driver.haveItemOnScreen(_getItemPath(ItemKeys.emptyProductionSlot), SlotPositions.p3)) {
+                count = 9
+                continue
             }
             if (!(await haveshoponscreen(driver))) {
                 await openGame(driver)
-                mutex.value = 1;
-                return;
+                mutex.value = 1
+                return
             }
-            await goDownLast(driver);
-            await goUp(driver);
+            await goDownLast(driver)
+            await goUp(driver)
             break
         }
     }
     if (mutex.value >= 1) {
-        return;
+        return
     }
     const { x, y } = MakeSlotList[slot]
     for (let i = 0; i < number; i++) {
@@ -441,13 +438,33 @@ const makeItems = async (driver, floor = 1, slot = 0, number = 1, mutex) => {
     }
 
     // 6) Đóng panel, quay lại game
-    await driver.tap(16.0, floor === 1 ? 86.0 : 65.0);
-    await driver.sleep(0.1);
-    await driver.tap(73.5, 60.0);
-    await driver.sleep(0.1);
-    await backToGame(driver);
+    await driver.tap(16.0, floor === 1 ? 86.0 : 65.0)
+    await driver.sleep(0.1)
+    await driver.tap(73.5, 60.0)
+    await driver.sleep(0.1)
+    await backToGame(driver)
+}
 
-};
+const _sellSelectedItem = async (driver, option, items, itemId, isAds, mutex2) => {
+    while (itemId) {
+        if (await driver.tapItemOnScreen(_getItemPath(itemId), SlotPositions.bando)) {
+            await _sell(driver, isAds)
+            if (option == SellItemOptions.other) {
+                await driver.sleep(0.3)
+                await driver.tap(49.7, 60.4)
+            }
+            mutex2.value++
+            return _getItemId(items)
+        } else {
+            if (Array.isArray(items)) {
+                const idx = items.findIndex((el) => el.key === itemId)
+                if (idx >= 0) items[idx].value = 0
+            }
+            itemId = _getItemId(items)
+        }
+    }
+    return null
+}
 
 const sellItems = async (driver, option, items, mutex, mutex2, removeItems = false, isAds = true, loop = true) => {
     if (mutex2.value >= items.value) {
@@ -474,12 +491,13 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
     ])
     await driver.sleep(1.5)
     let itemId = _getItemId(items)
-    let count = 0, cnt = mutex2.value
+    let count = 0,
+        cnt = mutex2.value
     while (itemId) {
         if (mutex2.value >= items.value - 1) {
             loop = true
             mutex.value = 0
-            break;
+            break
         }
         var soldSlot = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.soldSlot), SlotPositions.quayhang)
         if (soldSlot !== null) {
@@ -489,23 +507,8 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
             await driver.sleep(0.5)
             await driver.tap(option_x, option_y)
             await driver.sleep(0.5)
-            if (await driver.tapItemOnScreen(_getItemPath(itemId), SlotPositions.bando)) {
-                await _sell(driver, isAds)
-                if (option == SellItemOptions.other) {
-                    await driver.sleep(0.3)
-                    await driver.tap(49.7, 60.4)
-                }
-                itemId = _getItemId(items)
-                mutex2.value++
-            }
-            else {
-                if (Array.isArray(items)) {
-                    const idx = items.findIndex(el => el.key === itemId);
-                    if (idx >= 0) items[idx].value = 0;
-                }
-                itemId = _getItemId(items);
-                if (!itemId) break;
-            }
+            itemId = await _sellSelectedItem(driver, option, items, itemId, isAds, mutex2)
+            if (!itemId) break
             continue
         }
 
@@ -515,31 +518,15 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
             await driver.sleep(0.6)
             await driver.tap(option_x, option_y)
             await driver.sleep(0.5)
-            // choose item by image
-            if ((await driver.tapItemOnScreen(_getItemPath(itemId), SlotPositions.bando))) {
-                await _sell(driver, isAds)
-                if (option == SellItemOptions.other) {
-                    await driver.sleep(0.3)
-                    await driver.tap(49.7, 60.4)
-                }
-                itemId = _getItemId(items)
-                mutex2.value++
-            }
-            else {
-                if (Array.isArray(items)) {
-                    const idx = items.findIndex(el => el.key === itemId);
-                    if (idx >= 0) items[idx].value = 0;
-                }
-                itemId = _getItemId(items);
-                if (!itemId) break;
-            }
+            itemId = await _sellSelectedItem(driver, option, items, itemId, isAds, mutex2)
+            if (!itemId) break
             continue
         }
         // click ads
-        if (!loop || cnt == mutex2.value) {
-            var chuaqc = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.chuaqc))
-            if (chuaqc) {
-                if (isAds) {
+        if (isAds) {
+            if (!loop || cnt == mutex2.value) {
+                var chuaqc = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.chuaqc))
+                if (chuaqc) {
                     await driver.tap(chuaqc.x, chuaqc.y)
                     await driver.sleep(0.5)
                     await driver.tap(50.0, 70.1)
@@ -562,29 +549,49 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
         count++
         if (count > 2) {
             if (removeItems) {
-                while (mutex2.value < items.value) {
+                while (itemId) {
                     await driver.tapItemOnScreen(_getItemPath(ItemKeys.chuaqc), SlotPositions.quayhang)
-                    await driver.sleep(0.4)
-                    if ((await driver.tapItemOnScreen(_getItemPath(ItemKeys.xoavp), SlotPositions.quayhang))) {
+                    await driver.sleep(0.5)
+                    if (await driver.tapItemOnScreen(_getItemPath(ItemKeys.xoavp), SlotPositions.quayhang)) {
                         await driver.sleep(0.3)
                         await driver.tapItemOnScreen(_getItemPath(ItemKeys.dongy2), SlotPositions.quayhang)
-                        mutex2.value++
-                        continue
-                    }
-                    else {
-                        if ((await driver.haveItemOnScreen(_getItemPath(ItemKeys.chuachon, SlotPositions.p2)))) {
-                            await driver.press(KeyCode.BACK);
+                        await driver.sleep(0.2)
+                        var soldSlot = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.soldSlot), SlotPositions.quayhang)
+                        if (soldSlot !== null) {
+                            await driver.tap(soldSlot.x, soldSlot.y)
+                            await driver.sleep(0.1)
+                            await driver.tap(soldSlot.x, soldSlot.y)
+                            await driver.sleep(0.5)
+                            await driver.tap(option_x, option_y)
+                            await driver.sleep(0.5)
+                            itemId = await _sellSelectedItem(driver, option, items, itemId, isAds, mutex2)
+                            if (!itemId) break
+                            continue
                         }
-                        else {
-                            await backToGame(driver);
-                            await driver.sleep(1);
+
+                        var emptySlot = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.emptySellSlot), SlotPositions.quayhang)
+                        if (emptySlot != null) {
+                            await driver.tap(emptySlot.x, emptySlot.y)
+                            await driver.sleep(0.6)
+                            await driver.tap(option_x, option_y)
+                            await driver.sleep(0.5)
+                            itemId = await _sellSelectedItem(driver, option, items, itemId, isAds, mutex2)
+                            if (!itemId) break
+                            continue
+                        }
+                        continue
+                    } else {
+                        if (await driver.haveItemOnScreen(_getItemPath(ItemKeys.chuachon, SlotPositions.p2))) {
+                            await driver.press(KeyCode.BACK)
+                        } else {
+                            await backToGame(driver)
+                            await driver.sleep(1)
                             await driver.tap(66.25, 83.7)
                         }
                         break
                     }
                 }
-            }
-            if (!loop) {
+            } else if (!loop) {
                 await driver.action([
                     { duration: 0, x: 23.8, y: 54.9 },
                     { duration: 300, x: 74.4, y: 54.9 },
@@ -595,8 +602,8 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
                     { duration: 300, x: 74.4, y: 54.9 },
                 ])
                 await driver.sleep(1.5)
-                count = 0;
-                continue;
+                count = 0
+                continue
             }
             if (mutex.value == 1) {
                 return await sellItems(driver, option, items, mutex, mutex2, removeItems, isAds, loop)
@@ -607,8 +614,6 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
     await backToGame(driver)
 }
 
-
-
 const sellEventItems = async (driver, itemKey, quantity = 9999, isAds = false) => {
     await backToGame(driver)
     await goDownLast(driver)
@@ -616,7 +621,8 @@ const sellEventItems = async (driver, itemKey, quantity = 9999, isAds = false) =
     // open
     await driver.tap(66.25, 83.7)
     await driver.sleep(1)
-    let count = 0, cnt = 0
+    let count = 0,
+        cnt = 0
     while (cnt < quantity) {
         var soldSlot = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.soldSlot), SlotPositions.quayhang)
         if (soldSlot !== null) {
@@ -631,8 +637,7 @@ const sellEventItems = async (driver, itemKey, quantity = 9999, isAds = false) =
                 await _sell(driver, isAds)
                 cnt++
                 continue
-            }
-            else {
+            } else {
                 await driver.press(KeyCode.BACK)
                 continue
             }
@@ -649,12 +654,10 @@ const sellEventItems = async (driver, itemKey, quantity = 9999, isAds = false) =
                 await _sell(driver, isAds)
                 cnt++
                 continue
-            }
-            else {
+            } else {
                 await driver.press(KeyCode.BACK)
                 continue
             }
-
         }
         if (!isAds) {
             continue
@@ -683,12 +686,11 @@ const sellEventItems = async (driver, itemKey, quantity = 9999, isAds = false) =
             await driver.tap(66.25, 83.7)
             await driver.sleep(1)
             count = 0
-            cnt = 0;
+            cnt = 0
             continue
         }
     }
     await backToGame(driver)
-
 }
 
 const buy8SlotItem = async (driver) => {
@@ -696,7 +698,7 @@ const buy8SlotItem = async (driver) => {
     await driver.tap(64.3, 85.5)
     await driver.sleep(0.3)
 
-    let count = 2;
+    let count = 2
     while (count-- > 0) {
         for (let i = 0; i < SellSlotList.length; i++) {
             const slot = SellSlotList[i]
@@ -757,103 +759,116 @@ const haveshoponscreen = async (driver) => {
     return check
 }
 
-let pythonSpawnPromise = null;
+let pythonSpawnPromise = null
 
 const ensurePythonServer = async () => {
-    const http = require('http');
-    const { spawn } = require('child_process');
-    const { resolve } = require('path');
+    const http = require('http')
+    const { spawn } = require('child_process')
+    const { resolve } = require('path')
 
     // Check if it's already alive
-    const pingServer = () => new Promise((resolvePing) => {
-        const req = http.get('http://127.0.0.1:5000/ping', (res) => {
-            resolvePing(res.statusCode === 200);
-        }).on('error', () => resolvePing(false));
-        req.setTimeout(1000, () => { req.destroy(); resolvePing(false); });
-    });
+    const pingServer = () =>
+        new Promise((resolvePing) => {
+            const req = http
+                .get('http://127.0.0.1:5000/ping', (res) => {
+                    resolvePing(res.statusCode === 200)
+                })
+                .on('error', () => resolvePing(false))
+            req.setTimeout(1000, () => {
+                req.destroy()
+                resolvePing(false)
+            })
+        })
 
     try {
-        const isAlive = await pingServer();
-        if (isAlive) return true;
+        const isAlive = await pingServer()
+        if (isAlive) return true
     } catch (e) {
-        console.error("Lỗi khi ping AI server:", e);
+        console.error('Lỗi khi ping AI server:', e)
     }
 
     // Khoá luồng để nhiều giả lập không gọi đẻ nhánh Python cùng lúc
     if (!pythonSpawnPromise) {
         pythonSpawnPromise = new Promise(async (resolvePromise) => {
             try {
-                console.log("\n[Tiết kiệm RAM] OCR Server đang tắt. Bắt đầu tự động nạp AI ngầm...");
-                const rootDir = resolve(__dirname, '../../../../');
+                console.log('\n[Tiết kiệm RAM] OCR Server đang tắt. Bắt đầu tự động nạp AI ngầm...')
+                const rootDir = resolve(__dirname, '../../../../')
 
-                const fs = require('fs');
-                const outLog = fs.openSync(resolve(rootDir, 'ocr_server.log'), 'a');
+                const fs = require('fs')
+                const outLog = fs.openSync(resolve(rootDir, 'ocr_server.log'), 'a')
 
                 // Ưu tiên 1: ocr_server.exe (PyInstaller - không cần Python)
-                const exePath = resolve(rootDir, 'ai_server', 'ocr_server', 'ocr_server.exe');
+                const exePath = resolve(rootDir, 'ai_server', 'ocr_server', 'ocr_server.exe')
 
-                let spawnCmd, spawnArgs;
+                let spawnCmd, spawnArgs
                 if (fs.existsSync(exePath)) {
-                    spawnCmd = exePath;
-                    spawnArgs = [];
-                    console.log(`[AI] Sử dụng EXE: ${exePath}`);
+                    spawnCmd = exePath
+                    spawnArgs = []
+                    console.log(`[AI] Sử dụng EXE: ${exePath}`)
                 } else {
                     // Fallback: python script
-                    const pyScript = resolve(__dirname, '../../utils/ocr_server.py');
-                    const portablePython = resolve(rootDir, 'python_portable', 'python.exe');
-                    const venvPython = resolve(rootDir, '.venv', 'Scripts', 'python.exe');
-                    spawnCmd = fs.existsSync(portablePython) ? portablePython : (fs.existsSync(venvPython) ? venvPython : 'python');
-                    spawnArgs = [pyScript];
-                    console.log(`[AI] Sử dụng Python: ${spawnCmd}`);
+                    const pyScript = resolve(__dirname, '../../utils/ocr_server.py')
+                    const portablePython = resolve(rootDir, 'python_portable', 'python.exe')
+                    const venvPython = resolve(rootDir, '.venv', 'Scripts', 'python.exe')
+                    spawnCmd = fs.existsSync(portablePython) ? portablePython : fs.existsSync(venvPython) ? venvPython : 'python'
+                    spawnArgs = [pyScript]
+                    console.log(`[AI] Sử dụng Python: ${spawnCmd}`)
                 }
 
                 const child = spawn(spawnCmd, spawnArgs, {
                     stdio: ['ignore', outLog, outLog],
                     windowsHide: true,
                     cwd: rootDir,
-                    env: { ...process.env, PYTHONIOENCODING: 'utf8' }
-                });
-                child.unref();
+                    env: { ...process.env, PYTHONIOENCODING: 'utf8' },
+                })
+                child.unref()
 
                 // Đợi tối đa 30 giây cho PyTorch nạp xong vào RAM (Bản EXE thường chậm hơn ở lần đầu)
                 for (let i = 0; i < 15; i++) {
-                    await new Promise(r => setTimeout(r, 1000));
+                    await new Promise((r) => setTimeout(r, 1000))
                     if (await pingServer()) {
-                        console.log("\n[Tiết kiệm RAM] Nạp AI thành công! Tiếp tục quét kho...");
-                        resolvePromise(true);
-                        return;
+                        console.log('\n[Tiết kiệm RAM] Nạp AI thành công! Tiếp tục quét kho...')
+                        resolvePromise(true)
+                        return
                     }
                 }
-                console.error("\n[Tiết kiệm RAM] Quá 15 giây vẫn chưa nạp xong AI!");
-                resolvePromise(false);
+                console.error('\n[Tiết kiệm RAM] Quá 15 giây vẫn chưa nạp xong AI!')
+                resolvePromise(false)
             } catch (err) {
-                console.error("\n[Tiết kiệm RAM] Lỗi khi cố gắng bật AI:", err);
-                resolvePromise(false);
+                console.error('\n[Tiết kiệm RAM] Lỗi khi cố gắng bật AI:', err)
+                resolvePromise(false)
             } finally {
-                setTimeout(() => { pythonSpawnPromise = null; }, 1000);
+                setTimeout(() => {
+                    pythonSpawnPromise = null
+                }, 1000)
             }
-        });
+        })
     }
 
     try {
-        const result = await pythonSpawnPromise;
-        return result;
+        const result = await pythonSpawnPromise
+        return result
     } catch (err) {
-        console.error("Lỗi trong quá trình chạy pythonSpawnPromise:", err);
-        pythonSpawnPromise = null;
-        return false;
+        console.error('Lỗi trong quá trình chạy pythonSpawnPromise:', err)
+        pythonSpawnPromise = null
+        return false
     }
 }
 
 const shutdownPythonServer = async () => {
-    const http = require('http');
+    const http = require('http')
     return new Promise((resolve) => {
-        const req = http.get('http://127.0.0.1:5000/exit', (res) => {
-            console.log("\n[Tiết kiệm RAM] Đã gửi lệnh tự huỷ tới Máy chủ AI thành công.");
-            resolve(true);
-        }).on('error', () => resolve(true)); // Lỗi báo máy chủ đã tắt, cũng tính là true
-        req.setTimeout(2000, () => { req.destroy(); resolve(true); });
-    });
+        const req = http
+            .get('http://127.0.0.1:5000/exit', (res) => {
+                console.log('\n[Tiết kiệm RAM] Đã gửi lệnh tự huỷ tới Máy chủ AI thành công.')
+                resolve(true)
+            })
+            .on('error', () => resolve(true)) // Lỗi báo máy chủ đã tắt, cũng tính là true
+        req.setTimeout(2000, () => {
+            req.destroy()
+            resolve(true)
+        })
+    })
 }
 
 const readNumbersAndSave = async (driver, type) => {
@@ -872,118 +887,121 @@ const readNumbersAndSave = async (driver, type) => {
         }
         const screenshotDataRaw = await driver.screenshot()
         // Đảm bảo ép chuẩn Base64 String
-        const screenshotBase64 = typeof screenshotDataRaw === 'string' ? screenshotDataRaw :
-            (Buffer.isBuffer(screenshotDataRaw) ? screenshotDataRaw.toString('base64') :
-                (screenshotDataRaw.value || ""));
+        const screenshotBase64 = typeof screenshotDataRaw === 'string' ? screenshotDataRaw : Buffer.isBuffer(screenshotDataRaw) ? screenshotDataRaw.toString('base64') : screenshotDataRaw.value || ''
 
-        // XIN LỖI JIMP, MÀY BỊ SA THẢI RỒI! 
+        // XIN LỖI JIMP, MÀY BỊ SA THẢI RỒI!
         // Thay vì dùng Jimp gọt ảnh tốn 20% CPU và fs để ghi ổ cứng, ta gửi sống 100% qua RAM!
 
         // Đảm bảo Máy chủ AI đang chạy, nếu tắt thì đánh thức nó dậy (nếu chưa gọi)
         await ensurePythonServer()
 
         // Gọi API sang Máy chủ Python EasyOCR nền tảng (cổng 5000)
-        const http = require('http');
-        let numbersStr = "";
+        const http = require('http')
+        let numbersStr = ''
         try {
             numbersStr = await new Promise((resolvePromise, rejectPromise) => {
-                const req = http.request({
-                    hostname: '127.0.0.1',
-                    port: 5000,
-                    path: '/ocr',
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    timeout: 20000 // 20 giây tối đa
-                }, (res) => {
-                    let body = '';
-                    res.on('data', (chunk) => body += chunk);
-                    res.on('end', () => {
-                        try {
-                            const data = JSON.parse(body);
-                            if (data.success) {
-                                resolvePromise(data.text || "");
-                            } else {
-                                rejectPromise(new Error(data.error || "Lỗi không xác định từ OCR Server"));
+                const req = http.request(
+                    {
+                        hostname: '127.0.0.1',
+                        port: 5000,
+                        path: '/ocr',
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        timeout: 20000, // 20 giây tối đa
+                    },
+                    (res) => {
+                        let body = ''
+                        res.on('data', (chunk) => (body += chunk))
+                        res.on('end', () => {
+                            try {
+                                const data = JSON.parse(body)
+                                if (data.success) {
+                                    resolvePromise(data.text || '')
+                                } else {
+                                    rejectPromise(new Error(data.error || 'Lỗi không xác định từ OCR Server'))
+                                }
+                            } catch (err) {
+                                rejectPromise(err)
                             }
-                        } catch (err) {
-                            rejectPromise(err);
-                        }
-                    });
-                });
+                        })
+                    }
+                )
 
                 req.on('error', (e) => {
                     if (e.code === 'ECONNREFUSED') {
-                        console.error('\n[LỖI NGHIÊM TRỌNG]: Không thể kết nối tới mô hình AI. Thử lại sau.\n');
+                        console.error('\n[LỖI NGHIÊM TRỌNG]: Không thể kết nối tới mô hình AI. Thử lại sau.\n')
                     }
-                    rejectPromise(e);
-                });
+                    rejectPromise(e)
+                })
                 req.on('timeout', () => {
-                    req.destroy();
-                    rejectPromise(new Error("Timeout kết nối Python OCR Server"));
-                });
+                    req.destroy()
+                    rejectPromise(new Error('Timeout kết nối Python OCR Server'))
+                })
 
                 // Vận chuyển đường cao tốc (Gửi mảng Byte Base64 trong 0.01 giây bằng RAM)
-                req.write(JSON.stringify({
-                    image_base64: screenshotBase64,
-                    type: type,
-                    device_id: driver.deviceId || 'unknown'
-                }));
-                req.end();
-            });
+                req.write(
+                    JSON.stringify({
+                        image_base64: screenshotBase64,
+                        type: type,
+                        device_id: driver.deviceId || 'unknown',
+                    })
+                )
+                req.end()
+            })
         } catch (e) {
-            console.error("Lỗi API gọi Python:", e.message);
+            console.error('Lỗi API gọi Python:', e.message)
         }
 
-        console.log(`[OCR RAW] Kho ${type}: "${numbersStr}"`);
+        console.log(`[OCR RAW] Kho ${type}: "${numbersStr}"`)
 
         // Bóc tách logic
-        let rawData = numbersStr.replace(/[^0-9\s/]/g, '').trim();
+        let rawData = numbersStr.replace(/[^0-9\s/]/g, '').trim()
 
         // =====================================================================
         // BƯỚC 1: TÌM DENOMINATOR (MẪU SỐ / MAX) MỘT CÁCH THÔNG MINH
         // =====================================================================
-        let denominator = null;
+        let denominator = null
 
         if (rawData.includes('/')) {
             // Tìm tất cả các cụm số đứng ngay sau dấu '/'
-            let slashParts = rawData.split('/');
-            let candidates = [];
+            let slashParts = rawData.split('/')
+            let candidates = []
 
             for (let i = 1; i < slashParts.length; i++) {
-                let afterSlash = slashParts[i].trim().split(/\s+/)[0]; // Lấy token đầu tiên sau dấu /
-                if (afterSlash) candidates.push(afterSlash);
+                let afterSlash = slashParts[i].trim().split(/\s+/)[0] // Lấy token đầu tiên sau dấu /
+                if (afterSlash) candidates.push(afterSlash)
             }
 
             // Tìm cụm xuất hiện nhiều nhất và ngắn nhất (để loại bỏ phần dính)
             if (candidates.length > 0) {
-                let freqs = {};
-                let maxFreq = 0;
+                let freqs = {}
+                let maxFreq = 0
                 for (let c of candidates) {
-                    freqs[c] = (freqs[c] || 0) + 1;
-                    if (freqs[c] > maxFreq) maxFreq = freqs[c];
+                    freqs[c] = (freqs[c] || 0) + 1
+                    if (freqs[c] > maxFreq) maxFreq = freqs[c]
                 }
 
-                let frequentCandidates = candidates.filter(c => freqs[c] === maxFreq);
+                let frequentCandidates = candidates.filter((c) => freqs[c] === maxFreq)
                 // Trong các số xuất hiện nhiều nhất, lấy số ngắn nhất (VD: giữa '114104' và '114' -> Lấy '114')
-                denominator = frequentCandidates.reduce((a, b) => a.length <= b.length ? a : b);
+                denominator = frequentCandidates.reduce((a, b) => (a.length <= b.length ? a : b))
             }
         }
 
         // Fallback: Không có dấu '/', tìm hậu tố chung (VD: "8277 3977" -> "77")
         if (!denominator) {
-            let chunks = rawData.split(/\s+/).filter(c => c.length > 1);
+            let chunks = rawData.split(/\s+/).filter((c) => c.length > 1)
             if (chunks.length > 1) {
-                let suffix = "";
-                let minLen = Math.min(...chunks.map(c => c.length));
+                let suffix = ''
+                let minLen = Math.min(...chunks.map((c) => c.length))
                 for (let i = 1; i <= minLen; i++) {
-                    const char0 = chunks[0][chunks[0].length - i];
-                    if (chunks.every(c => c[c.length - i] === char0)) {
-                        suffix = char0 + suffix;
+                    const char0 = chunks[0][chunks[0].length - i]
+                    if (chunks.every((c) => c[c.length - i] === char0)) {
+                        suffix = char0 + suffix
                     } else {
-                        break;
+                        break
                     }
                 }
-                if (suffix.length > 0) denominator = suffix;
+                if (suffix.length > 0) denominator = suffix
             }
         }
 
@@ -991,28 +1009,28 @@ const readNumbersAndSave = async (driver, type) => {
         // BƯỚC 2: TÁCH SỐ DÍNH LIỀN BẰNG CÁCH TRẢI PHẲNG (FLATTENING)
         // =====================================================================
         // Thêm khoảng trắng quanh '/' để tách nó ra thành 1 token độc lập
-        let spacedData = rawData.replace(/\//g, ' / ');
-        let initialTokens = spacedData.split(/\s+/).filter(c => c);
+        let spacedData = rawData.replace(/\//g, ' / ')
+        let initialTokens = spacedData.split(/\s+/).filter((c) => c)
 
-        let expandedTokens = [];
+        let expandedTokens = []
         for (let token of initialTokens) {
-            if (token === '/') continue; // Lọc bỏ dấu '/', ta chỉ lấy các con số
+            if (token === '/') continue // Lọc bỏ dấu '/', ta chỉ lấy các con số
 
             if (denominator && token !== denominator) {
                 // Trường hợp 1: "114104" -> tách thành "114" (max) và "104" (current tiếp theo)
                 if (token.startsWith(denominator) && token.length > denominator.length) {
-                    expandedTokens.push(denominator);
-                    expandedTokens.push(token.slice(denominator.length));
+                    expandedTokens.push(denominator)
+                    expandedTokens.push(token.slice(denominator.length))
                 }
                 // Trường hợp 2: "8277" -> tách thành "82" (current) và "77" (max)
                 else if (token.endsWith(denominator) && token.length > denominator.length) {
-                    expandedTokens.push(token.slice(0, token.length - denominator.length));
-                    expandedTokens.push(denominator);
+                    expandedTokens.push(token.slice(0, token.length - denominator.length))
+                    expandedTokens.push(denominator)
                 } else {
-                    expandedTokens.push(token);
+                    expandedTokens.push(token)
                 }
             } else {
-                expandedTokens.push(token);
+                expandedTokens.push(token)
             }
         }
 
@@ -1022,53 +1040,53 @@ const readNumbersAndSave = async (driver, type) => {
         // =====================================================================
         // BƯỚC 3: ÁP DỤNG LUẬT SỬA LỖI OCR CHO TỪNG CẶP
         // =====================================================================
-        const results = [];
+        const results = []
         for (let i = 0; i < expandedTokens.length; i += 2) {
-            let current = expandedTokens[i];
+            let current = expandedTokens[i]
             // Nếu token cuối bị khuyết max, mượn lại denominator
-            let max = expandedTokens[i + 1] || denominator || "0";
+            let max = expandedTokens[i + 1] || denominator || '0'
 
             // Luật 1: Vì số 0 đứng đầu nên 01 chỉ lấy số 0
             if (current.startsWith('0') && current.length > 1) {
-                current = '0';
+                current = '0'
             }
 
-            if (!current) current = "0";
-            if (!max) max = "0";
+            if (!current) current = '0'
+            if (!max) max = '0'
 
             // Luật 2: Sửa lỗi current quá lớn (Đã fix lỗi crash bằng cách ép lại thành String)
             while (current.length >= 2 && parseInt(current) >= parseInt(max) + 50 && parseInt(max) > 0) {
                 if (parseInt(current) / parseInt(max) <= 2) {
-                    current = (parseInt(max) + 50).toString(); // Quan trọng: Phải chuyển lại thành String
+                    current = (parseInt(max) + 50).toString() // Quan trọng: Phải chuyển lại thành String
                 } else {
-                    current = current.slice(0, -1);
+                    current = current.slice(0, -1)
                 }
             }
 
-            results.push(`${current} ${max}`);
+            results.push(`${current} ${max}`)
         }
 
-        let parsedNumbers = results.join(' ');
-        if (!parsedNumbers || parsedNumbers === "") {
-            parsedNumbers = "0";
+        let parsedNumbers = results.join(' ')
+        if (!parsedNumbers || parsedNumbers === '') {
+            parsedNumbers = '0'
         }
 
-        console.log(`[OCR CLEAN] Output: "${parsedNumbers}"`);
+        console.log(`[OCR CLEAN] Output: "${parsedNumbers}"`)
 
         // Xuất file chính thức ghi đè dạng "x y a b c d"
-        const dir = resolve(__dirname, `../../../../data_kho`);
+        const dir = resolve(__dirname, `../../../../data_kho`)
         if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
+            fs.mkdirSync(dir, { recursive: true })
         }
         const fileName = resolve(dir, `kho_${type}_data_${driver.deviceId || 'unknown'}.txt`)
         fs.writeFileSync(fileName, parsedNumbers, 'utf8')
 
         await backToGame(driver)
 
-        return parsedNumbers;
+        return parsedNumbers
     } catch (err) {
-        console.error(`Error in readNumbersAndSave for type ${type}:`, err);
-        return "0";
+        console.error(`Error in readNumbersAndSave for type ${type}:`, err)
+        return '0'
     }
 }
 
@@ -1115,8 +1133,6 @@ const _getItemId = (items) => {
 
     return null
 }
-
-
 
 const _sell = async (driver, isAds = true) => {
     await driver.sleep(0.2)

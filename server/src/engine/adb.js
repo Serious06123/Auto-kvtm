@@ -58,6 +58,14 @@ class ADBHelper {
 
         return streamProcess
     }
+    static isPackageInstalled = async (deviceId, packageName) => {
+        try {
+            const output = await runExecAsync(`${adbPath} -s ${deviceId} shell pm list packages ${packageName}`)
+            return output.includes(`package:${packageName}`)
+        } catch (err) {
+            return false
+        }
+    }
 }
 
 module.exports = {
