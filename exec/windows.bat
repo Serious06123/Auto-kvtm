@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 setlocal ENABLEDELAYEDEXPANSION
 
 call cls
@@ -82,8 +83,6 @@ if not !IS_BUILDED!==TRUE (
 )
 
 call cd ..
-call npm run stop
-call npm run clear
 call npm run start
 call npm run monitor
 pause

@@ -50,8 +50,6 @@ else
     echo "built before"
 fi
 
-npm run stop
-npm run clear
 npm run start
 
 # display monitoring information
