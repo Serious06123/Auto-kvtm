@@ -37,8 +37,18 @@ function runExec(command, outputHandler = null, errorHandler = null, exitHandler
 }
 
 function runSpawn(command, errorHandler = null, exitHandler = null) {
-    let commandArray = command.split(' ')
-    const childProcess = spawn(commandArray.shift(), commandArray)
+    let commandArray = command.match(/(?:[^\s"]+|"[^"]*")+/g) || []
+    let cmd = commandArray.shift()
+    if (cmd && cmd.startsWith('"') && cmd.endsWith('"')) {
+        cmd = cmd.slice(1, -1)
+    }
+    const args = commandArray.map(arg => {
+        if (arg.startsWith('"') && arg.endsWith('"')) {
+            return arg.slice(1, -1)
+        }
+        return arg
+    })
+    const childProcess = spawn(cmd, args)
 
     childProcess.stderr.on('data', function (data) {
         errorHandler ? errorHandler(data) : logErrMsg(data)

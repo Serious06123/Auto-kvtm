@@ -120,11 +120,11 @@ const SellSlotList = [
 ]
 
 const FriendHouseList = [
-    { x: 7.5, y: 79.3 },
-    { x: 22.5, y: 79.3 },
-    { x: 37.5, y: 79.3 },
-    { x: 52.5, y: 79.3 },
-    { x: 67.5, y: 79.3 },
+    { x: 14.5, y: 81.3 },
+    { x: 27.5, y: 81.3 },
+    { x: 40.5, y: 81.3 },
+    { x: 53.5, y: 81.3 },
+    { x: 66.5, y: 81.3 },
 ]
 
 const ItemKeys = {
@@ -149,6 +149,7 @@ const ItemKeys = {
     chuaqc: 'chua-qc',
     xoavp: 'xoa-vp',
     dongy2: 'dong-y-2',
+    xanhbatbo: 'xanh-bat-bo',
 }
 
 const TreeKeys = {

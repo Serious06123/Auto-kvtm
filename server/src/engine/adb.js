@@ -14,7 +14,7 @@ const getAdbPath = () => {
     }
 }
 
-const adbPath = getAdbPath()
+const adbPath = `"${getAdbPath()}"`
 
 const getDeviceNameById = async (deviceId) => {
     if (!deviceId.includes("emulator")) return deviceId

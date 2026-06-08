@@ -1,5 +1,6 @@
 const { back } = require('appium-uiautomator2-driver/build/lib/commands/navigation')
 const { KeyCode, SwipeDirection } = require('../../engine/webdriverio')
+const { detectBugInROIs } = require('../../engine/image')
 const fs = require('fs')
 const {
     DelayTime,
@@ -234,35 +235,79 @@ const harvestTrees = async (driver, mutex, floor = 4, pot = 5, sukien = false) =
     }
 }
 
+const bugROIs = [
+    { x: 335, y: 841, w: 104, h: 70 },
+    { x: 413, y: 839, w: 98, h: 80 },
+    { x: 494, y: 842, w: 97, h: 76 },
+    { x: 564, y: 838, w: 98, h: 76 },
+    { x: 640, y: 838, w: 94, h: 82 },
+    { x: 712, y: 834, w: 106, h: 82 },
+]
+
+const catchBugAtTwoNearestPots = async (driver, bugPercentX, bugPercentY) => {
+    const potsWithDistances = FirstRowSlotList.map((pot, index) => {
+        const dx = pot.x - bugPercentX
+        const dy = pot.y - bugPercentY
+        const dist = dx * dx + dy * dy
+        return { index, pot, dist }
+    })
+
+    potsWithDistances.sort((a, b) => a.dist - b.dist)
+
+    const nearestPots = potsWithDistances.slice(0, 2)
+
+    for (let item of nearestPots) {
+        const targetPot = item.pot
+        console.log(`Đang thử bắt bọ tại Chậu thứ ${item.index + 1} (Tọa độ chậu: ${targetPot.x}, ${targetPot.y})`)
+
+        await driver.tap(targetPot.x, targetPot.y)
+        await driver.sleep(0.5)
+
+        let votxanh = await driver.haveItemOnScreen(_getItemPath(ItemKeys.xanhbatbo), SlotPositions.p3p4)
+        if (votxanh) {
+            console.log(`Đã phát hiện thấy Vợt Xanh! Tiến hành kéo vợt bắt bọ.`)
+            const pointList = [{ duration: 0, x: votxanh.x, y: votxanh.y }]
+            const duration = 200 * DelayTime
+            pointList.push({
+                duration,
+                x: targetPot.x,
+                y: targetPot.y,
+            })
+            await driver.action(pointList)
+            await driver.sleep(1.0)
+            return true
+        } else {
+            console.log(`Chậu thứ ${item.index + 1} không có vợt xanh (không phải chậu bị bọ), đóng bảng chọn và thử chậu tiếp theo.`)
+            await backToGame(driver)
+            await driver.sleep(0.5)
+        }
+    }
+    return false
+}
+
 const findbugonfloor = async (driver, BugKeys) => {
     await goFriendHouse(driver, 0)
     await driver.sleep(1)
     for (let i = 0; i < 10; i++) {
-        let count = 0
-        let findbug = null
         await goUp(driver)
         await driver.sleep(1)
-        while (count < 5 && !findbug) {
-            findbug = await driver.getCoordinateItemOnScreen(_getItemPath(BugKeys), SlotPositions.batbo)
-            count++
+
+        let screenshot1 = await driver.screenshot()
+        await driver.sleep(0.1)
+        let screenshot2 = await driver.screenshot()
+        let detectedBugs = await detectBugInROIs(screenshot1, screenshot2, bugROIs, BugKeys)
+
+        if (detectedBugs.length > 0) {
+            console.log(`Phát hiện ${detectedBugs.length} con bọ trên tầng.`)
+            for (let bug of detectedBugs) {
+                const clickX = bug.roi.x + bug.roi.w / 2
+                const clickY = bug.roi.y + bug.roi.h / 2
+                const percentX = (clickX / 1000) * 100
+                const percentY = (clickY / 1000) * 100
+
+                await catchBugAtTwoNearestPots(driver, percentX, percentY)
+            }
         }
-        if (!findbug) {
-            continue
-        }
-        findbug = _getSlotNearest(findbug)
-        await driver.tap(findbug.x, findbug.y)
-        let votxanh = await driver.haveItemOnScreen(_getItemPath(ItemKeys.votxanh), SlotPositions.p3p4)
-        const pointList = [{ duration: 0, x: votxanh.x, y: votxanh.y }]
-        const duration = 200 * DelayTime
-        if (!votxanh) {
-            pointList.push({
-                duration,
-                x: findbug.x,
-                y: findbug.y,
-            })
-        }
-        await driver.sleep(0.5)
-        await driver.action(pointList)
     }
     await goFriendHouse(driver, 1)
     await driver.sleep(1)
@@ -271,42 +316,6 @@ const findbugonfloor = async (driver, BugKeys) => {
     await goMyHouse(driver)
 }
 
-const getPotNearest = async (driver, BugKeys) => {
-    await goFriendHouse(driver, 0)
-    await driver.sleep(1)
-    for (let i = 0; i < 10; i++) {
-        let count = 0
-        let findbug = null
-        await goUp(driver)
-        await driver.sleep(1)
-        while (count < 20 && !findbug) {
-            findbug = await driver.getCoordinateItemOnScreen(_getItemPath(BugKeys), SlotPositions.batbo)
-            count++
-        }
-        if (!findbug) {
-            continue
-        }
-        findbug = await _getSlotNearest(findbug)
-        await driver.tap(findbug.x, findbug.y)
-        let votxanh = await driver.haveItemOnScreen(_getItemPath(ItemKeys.votxanh), SlotPositions.p3p4)
-        const pointList = [{ duration: 0, x: votxanh.x, y: votxanh.y }]
-        const duration = 200 * DelayTime
-        if (!votxanh) {
-            pointList.push({
-                duration,
-                x: findbug.x,
-                y: findbug.y,
-            })
-        }
-        await driver.sleep(0.5)
-        await driver.action(pointList)
-    }
-    await goFriendHouse(driver, 1)
-    await driver.sleep(1)
-    await goUp(driver, 2)
-    await driver.sleep(0.5)
-    await goMyHouse(driver)
-}
 const findTreeOnScreen = async (driver, treeKey, isFindNext = true) => {
     let slotItem = await driver.getCoordinateItemOnScreen(_getItemPath(treeKey), SlotPositions.caytrong)
     let retryCount = 0
@@ -712,7 +721,7 @@ const buy8SlotItem = async (driver) => {
 
 const goFriendHouse = async (driver, index) => {
     const { x, y } = FriendHouseList[index]
-    await driver.tapItemOnScreen(_getItemPath(ItemKeys.friendHouse), SlotPositions.p4)
+    await driver.tapItemOnScreen(_getItemPath(ItemKeys.friendHouse), SlotPositions.p3p4)
     await driver.sleep(0.5)
     await driver.tap(x, y)
     await driver.sleep(2)
