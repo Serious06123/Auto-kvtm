@@ -168,7 +168,7 @@ class Driver {
 
 const connectAppium = async (capabilities) => {
     const wdOpts = {
-        hostname: process.env.APPIUM_HOST || '0.0.0.0',
+        hostname: process.env.APPIUM_HOST || '127.0.0.1',
         port: parseInt(process.env.APPIUM_PORT, 10) || 4723,
         path: '/wd/hub',
         logLevel: 'error',
