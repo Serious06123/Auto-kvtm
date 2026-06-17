@@ -282,20 +282,22 @@ const catchBugAtPot = async (driver, potIndex, absoluteFloorIndex, startFloorInd
         const duration = 300 * DelayTime
         pointList.push({
             duration,
-            x: targetX + 1,
+            x: targetX + 2,
             y: targetY - 1,
         })
         await driver.action(pointList)
-        await driver.sleep(0.2)
+        await driver.sleep(0.5)
         await driver.tap(94.6, 4.6)
+        await driver.sleep(0.5)
         // Khi bắt thành công, đánh dấu chậu này đã được xử lý
         checkedPots.add(`${absoluteFloorIndex}_${potIndex}`)
         return true
     } else {
         console.log(`Chậu thứ ${potIndex + 1} không có vợt xanh, đóng bảng chọn.`)
         checkedPots.add(potId)
+        await driver.sleep(0.5)
         await driver.tap(94.6, 4.6)
-        await driver.sleep(0.2)
+        await driver.sleep(0.5)
         return false
     }
 }
@@ -310,11 +312,14 @@ const findbugonfloor = async (driver, BugKeys) => {
     }
 
     let limits = {}
-    let caughtCounts = {
-        'ong-vang': 0,
-        'buom-hong': 0,
-        'chuon-chuon': 0,
+    if (!driver.caughtCounts) {
+        driver.caughtCounts = {
+            'ong-vang': 0,
+            'buom-hong': 0,
+            'chuon-chuon': 0,
+        }
     }
+    let caughtCounts = driver.caughtCounts
     let bugTypesToDetect = []
 
     if (Array.isArray(BugKeys)) {
@@ -395,7 +400,7 @@ const findbugonfloor = async (driver, BugKeys) => {
         let screenshots = []
         for (let s = 0; s < 3; s++) {
             screenshots.push(await driver.screenshot())
-            if (s < 2) await driver.sleep(0.4)
+            if (s < 2) await driver.sleep(0.2)
         }
 
         let detectedBugs = await detectBugInROIs(screenshots, allROIs, activeBugsForRound, startFloorIndex)
@@ -418,6 +423,7 @@ const findbugonfloor = async (driver, BugKeys) => {
             console.log(`Phát hiện bọ ở Tầng ${baseFloor} hoặc ${baseFloor + 1}. Bắt bọ...`)
             for (let bug of bugsOnFloor1And2) {
                 const normBugKey = normalizeKey(bug.bugKey)
+                console.log(`[Bắt bọ Debug] Tầng ${bug.roi.floorIndex + 1} - ${normBugKey}: Đã bắt = ${caughtCounts[normBugKey]}, Giới hạn = ${limits[normBugKey] || 9999}`)
                 if (caughtCounts[normBugKey] >= (limits[normBugKey] || 9999)) continue
 
                 const potId = `${bug.roi.floorIndex}_${bug.index - 1}`
@@ -445,6 +451,7 @@ const findbugonfloor = async (driver, BugKeys) => {
 
             for (let bug of bugsOnFloor3And4) {
                 const normBugKey = normalizeKey(bug.bugKey)
+                console.log(`[Bắt bọ Debug] Tầng ${bug.roi.floorIndex + 1} - ${normBugKey}: Đã bắt = ${caughtCounts[normBugKey]}, Giới hạn = ${limits[normBugKey] || 9999}`)
                 if (caughtCounts[normBugKey] >= (limits[normBugKey] || 9999)) continue
 
                 const potId = `${bug.roi.floorIndex}_${bug.index - 1}`
@@ -476,7 +483,7 @@ const findbugonfloor = async (driver, BugKeys) => {
         }
     }
     if (totalCaught > 0) {
-        console.log(`Đã bắt được ${totalCaught} con bọ, thực hiện chuyển đổi nhà bạn bè để nhận quà...`)
+        console.log(`Đã bắt được ${totalCaught} con bọ, qua nhà bạn bè để reset bọ...`)
         await goFriendHouse(driver, 1)
         await driver.sleep(1)
         await goUp(driver, 2)

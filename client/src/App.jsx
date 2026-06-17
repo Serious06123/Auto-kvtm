@@ -46,13 +46,24 @@ const App = (props) => {
         }
     }
 
+    const isNewerVersion = (remote, current) => {
+        if (!remote || !current) return false
+        const r = remote.split('.').map(Number)
+        const c = current.split('.').map(Number)
+        for (let i = 0; i < 3; i++) {
+            if ((r[i] || 0) > (c[i] || 0)) return true
+            if ((r[i] || 0) < (c[i] || 0)) return false
+        }
+        return false
+    }
+
     const handleCheckUpdate = async (manual = false) => {
         try {
             // Thêm timestamp để tránh cache
             const response = await axios.get(`${UPDATE_CHECK_URL}?t=${new Date().getTime()}`)
             const remoteVersion = response.data.version
-
-            if (remoteVersion && remoteVersion !== __APP_VERSION__) {
+ 
+            if (remoteVersion && isNewerVersion(remoteVersion, __APP_VERSION__)) {
                 const key = `open${Date.now()}`
                 const btn = (
                     <Button type="primary" size="small" onClick={() => {

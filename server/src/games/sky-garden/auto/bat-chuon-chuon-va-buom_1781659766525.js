@@ -15,9 +15,9 @@ module.exports = async (driver, gameOptions) => {
   const { quantity } = gameOptions;
   let mutex = { value: 0 };
   let mutex2 = { value: 0 };
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 100; i++) {
     if (mutex.value != 1) {
-      await produceItems(driver, i == 4, mutex);
+      await produceItems(driver, i == 99, mutex);
     } 
   }
 
