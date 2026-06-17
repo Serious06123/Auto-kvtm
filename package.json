@@ -1,6 +1,6 @@
 {
     "name": "auto-tools",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "description": "Auto Tools",
     "scripts": {
         "appium": "appium --base-path=/wd/hub --log-timestamp --local-timezone --log-no-colors --log-level error:warn --log ./log/appium.txt",
