@@ -222,6 +222,8 @@ async function detectBugInROIs(data1, data2, rois, bugType, floorIndex = 0) {
 
         let result = []
 
+        let roiResults = []
+
         for (let i = 0; i < actualRois.length; i++) {
             const roi = actualRois[i]
             const rect = new cv.Rect(roi.x, roi.y, roi.w, roi.h)
@@ -273,20 +275,61 @@ async function detectBugInROIs(data1, data2, rois, bugType, floorIndex = 0) {
                 crop.delete()
             }
 
-            const bestFoundBug = matchCount >= (mats.length >= 3 ? 3 : 1)
+            roiResults.push({
+                roi,
+                index: (i % 6) + 1,
+                matchCount,
+                bestMaxVal,
+                matchedBugName,
+            })
+        }
+
+        // Bước 2: Đánh giá chậu có bọ dựa trên biểu quyết đa số hoặc điều kiện chậu lân cận
+        for (let i = 0; i < roiResults.length; i++) {
+            const current = roiResults[i]
+            const potIndex = i % 6 // Index chậu từ 0 đến 5 trên cùng một tầng
+
+            let bestFoundBug = false
+            const threshold = mats.length >= 3 ? 3 : 1
+
+            if (current.matchCount >= threshold) {
+                bestFoundBug = true
+            } else if (mats.length >= 3 && current.matchCount === 2) {
+                // Kiểm tra 2 chậu kế bên trên cùng một tầng
+                let leftNeighborOk = true
+                let rightNeighborOk = true
+
+                if (potIndex > 0) {
+                    const left = roiResults[i - 1]
+                    if (left.matchCount >= 2) {
+                        leftNeighborOk = false
+                    }
+                }
+                if (potIndex < 5) {
+                    const right = roiResults[i + 1]
+                    if (right.matchCount >= 2) {
+                        rightNeighborOk = false
+                    }
+                }
+
+                if (leftNeighborOk && rightNeighborOk) {
+                    bestFoundBug = true
+                }
+            }
 
             console.log(
-                `[Bắt bọ Debug] Tầng ${roi.floorIndex + 1} - Chậu ${(i % 6) + 1} (${matchedBugName || 'none'}): Số lần khớp = ${matchCount}/${mats.length}, Độ khớp lớn nhất = ${bestMaxVal.toFixed(3)}`
+                `[Bắt bọ Debug] Tầng ${current.roi.floorIndex + 1} - Chậu ${current.index} (${current.matchedBugName || 'none'}): Số lần khớp = ${current.matchCount}/${mats.length}, Độ khớp lớn nhất = ${current.bestMaxVal.toFixed(3)}${bestFoundBug && current.matchCount === 2 ? ' (Chấp nhận vì 2 chậu bên cạnh < 2)' : ''}`
             )
 
-
-
             if (bestFoundBug) {
-                console.log(`[Bắt bọ] Tầng ${roi.floorIndex + 1} - Chậu ${(i % 6) + 1} XÁC NHẬN KHỚP! Khớp ${matchCount}/${mats.length} ảnh. Độ khớp lớn nhất: ${bestMaxVal.toFixed(3)}`)
+                console.log(
+                    `[Bắt bọ] Tầng ${current.roi.floorIndex + 1} - Chậu ${current.index} XÁC NHẬN KHỚP! Khớp ${current.matchCount}/${mats.length} ảnh. Độ khớp lớn nhất: ${current.bestMaxVal.toFixed(3)}`
+                )
                 result.push({
-                    index: (i % 6) + 1,
-                    roi: roi,
+                    index: current.index,
+                    roi: current.roi,
                     pixelCount: 1,
+                    bugKey: current.matchedBugName,
                 })
             }
         }

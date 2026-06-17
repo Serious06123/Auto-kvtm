@@ -395,7 +395,7 @@ const findbugonfloor = async (driver, BugKeys) => {
         let screenshots = []
         for (let s = 0; s < 3; s++) {
             screenshots.push(await driver.screenshot())
-            await driver.sleep(0.2)
+            if (s < 2) await driver.sleep(0.4)
         }
 
         let detectedBugs = await detectBugInROIs(screenshots, allROIs, activeBugsForRound, startFloorIndex)
