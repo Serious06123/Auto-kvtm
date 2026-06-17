@@ -123,24 +123,24 @@ class Driver {
         await actionChain.perform()
     }
 
-    haveItemOnScreen = async (itemFilePath, findPosition = null) => {
+    haveItemOnScreen = async (itemFilePath, findPosition = null, rate = null) => {
         if (!itemFilePath) return false
         let count = 0
         while (++count < MAX_RETRY) {
             const data = await this.screenshot()
-            const points = await findCoordinates(data, itemFilePath, findPosition)
+            const points = await findCoordinates(data, itemFilePath, findPosition, rate)
             if (points.length > 0) return true
             await this.sleep(0.1)
         }
         return false
     }
 
-    getCoordinateItemOnScreen = async (itemFilePath, findPosition = null) => {
+    getCoordinateItemOnScreen = async (itemFilePath, findPosition = null, rate = null) => {
         if (!itemFilePath) return null
         let count = 0
         while (++count < MAX_RETRY) {
             const data = await this.screenshot()
-            const points = await findCoordinates(data, itemFilePath, findPosition)
+            const points = await findCoordinates(data, itemFilePath, findPosition, rate)
             if (points.length > 0) {
                 return { x: points[points.length - 1].x, y: points[points.length - 1].y }
             }
@@ -149,12 +149,12 @@ class Driver {
         return null
     }
 
-    tapItemOnScreen = async (itemFilePath, findPosition = null) => {
+    tapItemOnScreen = async (itemFilePath, findPosition = null, rate = null) => {
         if (!itemFilePath) return false
         let count = 0
         while (++count < MAX_RETRY) {
             const data = await this.screenshot()
-            const points = await findCoordinates(data, itemFilePath, findPosition)
+            const points = await findCoordinates(data, itemFilePath, findPosition, rate)
             if (points.length > 0) {
                 await this.tap(points[points.length - 1].x, points[points.length - 1].y)
                 return true

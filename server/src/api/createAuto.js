@@ -48,9 +48,8 @@ const readAuto = async (req, res, next) => {
         if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'file not found' })
         const txt = fs.readFileSync(filePath, 'utf8')
 
-        // extract production block (robustly capture inner lines of produceItems)
-        // extract production block (robustly capture inner lines of produceItems until const sellItems)
-        const prodBlockMatch = txt.match(/const produceItems\s*=\s*async[^\{]*\{([\s\S]*?)(?=\s*const sellItems)/)
+        // extract production block (robustly capture inner lines of produceItems until sellItems or auto generated or module.exports)
+        const prodBlockMatch = txt.match(/const produceItems\s*=\s*async[^\{]*\{([\s\S]*?)(?=\s*(const sellItems|\/\/ auto generated|module\.exports))/)
         let production = []
         if (prodBlockMatch && prodBlockMatch[1]) {
             let body = prodBlockMatch[1].trim()
@@ -103,7 +102,7 @@ const createAuto = async (req, res, next) => {
         // build file content
         const lines = []
         lines.push("const core = require('../core')")
-        lines.push("const { SellItemOptions, ProductKeys, TreeKeys , ProductTreeKeys, ProductMineralKeys ,OtherKeys, EventKeys } = require('../const')")
+        lines.push("const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralKeys, OtherKeys, EventKeys, BugKeys } = require('../const')")
         lines.push('')
         lines.push('const produceItems = async (driver, isLast, mutex) => {')
         if (logic.production && Array.isArray(logic.production)) {
@@ -118,15 +117,16 @@ const createAuto = async (req, res, next) => {
         lines.push('  }')
         lines.push('}')
         lines.push('')
-        lines.push('const sellItems = async (driver, mutex, mutex2, removeItems = false, quantity = 0) => {')
-        lines.push('  // Sell Goods')
-        if (logic.sell && Array.isArray(logic.sell)) {
+
+        const hasSell = logic.sell && Array.isArray(logic.sell) && logic.sell.some(line => line.trim().length > 0)
+        if (hasSell) {
+            lines.push('const sellItems = async (driver, mutex, mutex2, removeItems = false, quantity = 0) => {')
+            lines.push('  // Sell Goods')
             for (const l of logic.sell) lines.push('  ' + l)
-        } else {
-            lines.push("  await core.sellItems(driver, SellItemOptions.goods, [{ key: ProductKeys.traHoaHong, value: 20 }], mutex, mutex2, removeItems, true)")
+            lines.push('}')
+            lines.push('')
         }
-        lines.push('}')
-        lines.push('')
+
         lines.push('// auto generated')
         lines.push('module.exports = async (driver, gameOptions) => {')
         lines.push('  const { sellItems: sell } = gameOptions;')
@@ -140,9 +140,11 @@ const createAuto = async (req, res, next) => {
         lines.push('    } ')
         lines.push('  }')
         lines.push('')
-        lines.push('  if (sell) {')
-        lines.push('    await sellItems(driver, mutex, mutex2, removeItems, quantity)')
-        lines.push('  }')
+        if (hasSell) {
+            lines.push('  if (sell) {')
+            lines.push('    await sellItems(driver, mutex, mutex2, removeItems, quantity)')
+            lines.push('  }')
+        }
         lines.push('}')
 
         const content = lines.join('\n')
@@ -174,12 +176,12 @@ const updateAuto = async (req, res, next) => {
         if (!name || !key) return res.status(400).json({ error: 'name and key required' })
 
         // if sell logic not provided in payload, try to preserve existing sell logic
-        if ((!logic.sell || !logic.sell.length)) {
+        if (logic.sell === undefined) {
             try {
                 const existingPath = path.resolve(__dirname, '../games/sky-garden/auto', `${key}.js`)
                 if (fs.existsSync(existingPath)) {
                     const existingTxt = fs.readFileSync(existingPath, 'utf8')
-                    const sellMatch = existingTxt.match(/const sellItems\s*=\s*async[^\{]*\{\n([\s\S]*?)\n\}/m)
+                    const sellMatch = existingTxt.match(/const sellItems\s*=\s*async[^\{]*\{([\s\S]*?)\}/m)
                     if (sellMatch && sellMatch[1]) {
                         logic.sell = sellMatch[1].split('\n').map((l) => l.replace(/^\s+|\s+$/g, '')).filter((l) => l && !l.startsWith('//'))
                     }
@@ -192,7 +194,7 @@ const updateAuto = async (req, res, next) => {
         // build file content (same as create)
         const lines = []
         lines.push("const core = require('../core')")
-        lines.push("const { SellItemOptions, ProductKeys, TreeKeys , ProductTreeKeys, ProductMineralKeys ,OtherKeys, EventKeys } = require('../const')")
+        lines.push("const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralKeys, OtherKeys, EventKeys, BugKeys } = require('../const')")
         lines.push('')
         lines.push('const produceItems = async (driver, isLast, mutex) => {')
         if (logic.production && Array.isArray(logic.production)) {
@@ -207,15 +209,16 @@ const updateAuto = async (req, res, next) => {
         lines.push('  }')
         lines.push('}')
         lines.push('')
-        lines.push('const sellItems = async (driver, mutex, mutex2, removeItems = false, quantity = 0) => {')
-        lines.push('  // Sell Goods')
-        if (logic.sell && Array.isArray(logic.sell) && logic.sell.length) {
+
+        const hasSell = logic.sell && Array.isArray(logic.sell) && logic.sell.some(line => line.trim().length > 0)
+        if (hasSell) {
+            lines.push('const sellItems = async (driver, mutex, mutex2, removeItems = false, quantity = 0) => {')
+            lines.push('  // Sell Goods')
             for (const l of logic.sell) lines.push('  ' + l)
-        } else {
-            lines.push("  await core.sellItems(driver, SellItemOptions.goods, [{ key: ProductKeys.traHoaHong, value: 20 }], mutex, mutex2, removeItems, true)")
+            lines.push('}')
+            lines.push('')
         }
-        lines.push('}')
-        lines.push('')
+
         lines.push('// auto generated')
         lines.push('module.exports = async (driver, gameOptions) => {')
         lines.push('  const { sellItems: sell } = gameOptions;')
@@ -229,9 +232,11 @@ const updateAuto = async (req, res, next) => {
         lines.push('    } ')
         lines.push('  }')
         lines.push('')
-        lines.push('  if (sell) {')
-        lines.push('    await sellItems(driver, mutex, mutex2, removeItems, quantity)')
-        lines.push('  }')
+        if (hasSell) {
+            lines.push('  if (sell) {')
+            lines.push('    await sellItems(driver, mutex, mutex2, removeItems, quantity)')
+            lines.push('  }')
+        }
         lines.push('}')
 
         const content = lines.join('\n')

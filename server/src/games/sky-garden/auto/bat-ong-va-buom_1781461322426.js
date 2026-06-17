@@ -2,9 +2,9 @@ const core = require('../core')
 const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralKeys, OtherKeys, EventKeys, BugKeys } = require('../const')
 
 const produceItems = async (driver, isLast, mutex) => {
-  await core.findbugonfloor(driver, BugKeys.ong)
+  await core.findbugonfloor(driver, [{ key: BugKeys.ong, value: 10 }, { key: BugKeys.buom, value: 20 }])
   if (!isLast) {
-    await driver.sleep(8)
+    await driver.sleep(0)
   }
 }
 

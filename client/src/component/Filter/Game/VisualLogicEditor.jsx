@@ -7,16 +7,17 @@ const { Text } = Typography
 
 // Regex definitions for parsing
 const REGEX = {
-    goUp: /await core\.goUp\(driver, (\d+)\)/,
-    goDown: /await core\.goDown\(driver, (\d+)\)/,
-    goDownLast: /await core\.goDownLast\(driver\)/,
-    makeItems: /await core\.makeItems\(driver, (\d+), (\d+), (\d+), mutex\)/,
-    sleep: /await driver\.sleep\((\d+(\.\d+)?)\)/,
-    harvestTrees: /await core\.harvestTrees\(driver, mutex, (\d+), (\d+)\)/,
-    plantTrees: /await core\.plantTrees\(driver, mutex, TreeKeys\.(\w+), (\d+), (\d+)(?:, (true|false))?\)/,
+    goUp: /await\s+core\.goUp\(\s*driver\s*,\s*(\d+)\s*\);?/,
+    goDown: /await\s+core\.goDown\(\s*driver\s*,\s*(\d+)\s*\);?/,
+    goDownLast: /await\s+core\.goDownLast\(\s*driver\s*\);?/,
+    makeItems: /await\s+core\.makeItems\(\s*driver\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*mutex\s*\);?/,
+    sleep: /await\s+driver\.sleep\(\s*(\d+(\.\d+)?)\s*\);?/,
+    harvestTrees: /await\s+core\.harvestTrees\(\s*driver\s*,\s*mutex\s*,\s*(\d+)\s*,\s*(\d+)\s*\);?/,
+    plantTrees: /await\s+core\.plantTrees\(\s*driver\s*,\s*mutex\s*,\s*TreeKeys\.(\w+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*(true|false))?\s*\);?/,
     // sellItems: parse cả mảng nhiều item lẫn đơn item, bắt thêm isAds và loop
-    sellItems: /await core\.sellItems\(driver, SellItemOptions\.(\w+), \[(.+?)\], mutex, mutex2, removeItems(, (false|true))?(, (false|true))?\)/,
-    sellEventItems: /await core\.sellEventItems\(driver, EventKeys\.(\w+), quantity, false\)/
+    sellItems: /await\s+core\.sellItems\(\s*driver\s*,\s*SellItemOptions\.(\w+)\s*,\s*\[(.+?)\]\s*,\s*mutex\s*,\s*mutex2\s*,\s*removeItems(?:\s*,\s*(false|true))?(?:\s*,\s*(false|true))?\s*\);?/,
+    sellEventItems: /await\s+core\.sellEventItems\(\s*driver\s*,\s*EventKeys\.(\w+)\s*,\s*quantity\s*,\s*false\s*\);?/,
+    findbugonfloor: /await\s+core\.findbugonfloor\(\s*driver\s*,\s*([\s\S]+?)\s*\);?/
 }
 
 // Helper: parse chuỗi items array string thành mảng object [{prefix, itemKey, value}]
@@ -53,7 +54,12 @@ const TEMPLATES = {
         const itemsArr = (p.items || []).map(it => `{ key: ${prefix}.${it.itemKey}, value: ${it.value} }`).join(', ')
         return `await core.sellItems(driver, SellItemOptions.${p.option}, [${itemsArr}], mutex, mutex2, removeItems${extra}${loopParam})`
     },
-    sellEventItems: (p) => `await core.sellEventItems(driver, EventKeys.${p.itemKey}, quantity, false)`
+    sellEventItems: (p) => `await core.sellEventItems(driver, EventKeys.${p.itemKey}, quantity, false)`,
+    findbugonfloor: (p) => {
+        const bugs = p.bugs || []
+        const bugsArr = bugs.map(b => `{ key: BugKeys.${b.bugKey}, value: ${b.value} }`).join(', ')
+        return `await core.findbugonfloor(driver, [${bugsArr}])`
+    }
 }
 
 const VisualLogicEditor = ({ value, onChange, metadata, inputFunc, inputParams, title }) => {
@@ -75,6 +81,7 @@ const VisualLogicEditor = ({ value, onChange, metadata, inputFunc, inputParams, 
         harvestTrees: 'Thu hoạch cây',
         plantTrees: 'Trồng cây',
         sellItems: 'Bán đồ',
+        findbugonfloor: 'Bắt bọ'
     }
 
     // Parse value on load
@@ -109,7 +116,30 @@ const VisualLogicEditor = ({ value, onChange, metadata, inputFunc, inputParams, 
                         }
                     }
                     if (key === 'sellEventItems') { params.itemKey = match[1]; params.option = 'events' }
-
+                    if (key === 'findbugonfloor') {
+                        const argStr = match[1].trim()
+                        let bugs = []
+                        if (argStr.startsWith('[{')) {
+                            const re = /\{\s*key:\s*BugKeys\.(\w+),\s*value:\s*(\d+)\s*\}/g
+                            let m
+                            while ((m = re.exec(argStr)) !== null) {
+                                bugs.push({ bugKey: m[1], value: parseInt(m[2]) })
+                            }
+                        } else if (argStr.startsWith('[')) {
+                            const re = /BugKeys\.(\w+)/g
+                            let m
+                            while ((m = re.exec(argStr)) !== null) {
+                                bugs.push({ bugKey: m[1], value: 9999 })
+                            }
+                        } else {
+                            const m = argStr.match(/BugKeys\.(\w+)/)
+                            if (m) {
+                                bugs.push({ bugKey: m[1], value: 9999 })
+                            }
+                        }
+                        params.bugs = bugs
+                    }
+ 
                     return { type: key === 'sellEventItems' ? 'sellItems' : key, params, original: line, isCustom: false }
                 }
             }
@@ -188,6 +218,9 @@ const VisualLogicEditor = ({ value, onChange, metadata, inputFunc, inputParams, 
             newStep.params.pot = newStep.params.pot || 5
             newStep.params.isRight = newStep.params.isRight !== false
         }
+        if (selectedFunc === 'findbugonfloor') {
+            newStep.params.bugs = newStep.params.bugs && newStep.params.bugs.length ? newStep.params.bugs : [{ bugKey: 'ong', value: 5 }]
+        }
         if (selectedFunc === 'sellItems') {
             newStep.params.option = newStep.params.option || 'goods'
             if (newStep.params.option === 'events') {
@@ -229,6 +262,10 @@ const VisualLogicEditor = ({ value, onChange, metadata, inputFunc, inputParams, 
                 const itemsList = (p.items || []).map(it => `${it.itemKey}(${it.value})`).join(', ')
                 const fullTag = p.sellFullQty !== false ? ' ✅' : ''
                 return <Tag color="gold">Bán [{itemsList}] ({p.option}){fullTag} {p.advertise === false ? '(No Ad)' : ''}</Tag>
+            }
+            case 'findbugonfloor': {
+                const bugsList = (p.bugs || []).map(b => `${b.bugKey}(${b.value})`).join(', ')
+                return <Tag color="red">Bắt bọ: [{bugsList}]</Tag>
             }
             default: return item.type
         }
@@ -288,6 +325,49 @@ const VisualLogicEditor = ({ value, onChange, metadata, inputFunc, inputParams, 
                             </Form.Item>
                         </Col>
                     </Row>
+                </>
+            )
+        }
+        if (selectedFunc === 'findbugonfloor') {
+            const bugs = tempParams.bugs || []
+            const updateBug = (idx, field, val) => {
+                const newBugs = [...bugs]
+                newBugs[idx] = { ...newBugs[idx], [field]: val }
+                setP('bugs', newBugs)
+            }
+            const addBug = () => {
+                setP('bugs', [...bugs, { bugKey: 'ong', value: 5 }])
+            }
+            const removeBug = (idx) => {
+                const newBugs = bugs.filter((_, i) => i !== idx)
+                setP('bugs', newBugs.length ? newBugs : [{ bugKey: 'ong', value: 5 }])
+            }
+            return (
+                <>
+                    <Row gutter={16} style={{ marginBottom: 12 }}>
+                        <Col span={16}><Form.Item label="Danh sách bắt bọ và số lượng" style={{ marginBottom: 0 }} /></Col>
+                        <Col span={8} style={{ display: 'flex', alignItems: 'flex-end' }}>
+                            <Button type="dashed" icon={<PlusOutlined />} onClick={addBug} block>Thêm loại bọ</Button>
+                        </Col>
+                    </Row>
+                    <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 8, background: '#fff' }}>
+                        {bugs.map((it, idx) => (
+                            <Row key={idx} gutter={8} style={{ marginBottom: 8 }} align="middle">
+                                <Col span={2}><Text strong style={{ color: '#999' }}>#{idx + 1}</Text></Col>
+                                <Col span={11}>
+                                    <Select value={it.bugKey} onChange={v => updateBug(idx, 'bugKey', v)} style={{ width: '100%' }}>
+                                        {Object.keys(metadata?.consts?.BugKeys || {}).map(k => <Option key={k} value={k}>{k}</Option>)}
+                                    </Select>
+                                </Col>
+                                <Col span={7}>
+                                    <InputNumber min={1} value={it.value} onChange={v => updateBug(idx, 'value', v)} style={{ width: '100%' }} placeholder="SL" />
+                                </Col>
+                                <Col span={4}>
+                                    <Button type="text" danger icon={<DeleteOutlined />} onClick={() => removeBug(idx)} disabled={bugs.length <= 1} />
+                                </Col>
+                            </Row>
+                        ))}
+                    </div>
                 </>
             )
         }
@@ -438,7 +518,7 @@ const VisualLogicEditor = ({ value, onChange, metadata, inputFunc, inputParams, 
 
                     <Form.Item label="Function">
                         <Row gutter={[8, 8]}>
-                            {['goUp', 'goDown', 'goDownLast', 'makeItems', 'sleep', 'harvestTrees', 'plantTrees', 'sellItems'].map(func => (
+                            {['goUp', 'goDown', 'goDownLast', 'makeItems', 'sleep', 'harvestTrees', 'plantTrees', 'sellItems', 'findbugonfloor'].map(func => (
                                 <Col key={func}>
                                     <Button
                                         type={selectedFunc === func ? 'primary' : 'default'}
@@ -452,6 +532,11 @@ const VisualLogicEditor = ({ value, onChange, metadata, inputFunc, inputParams, 
                                                     option: 'goods',
                                                     sellFullQty: false,
                                                     items: [{ itemKey: 'traHoaHong', value: 20 }]
+                                                }))
+                                            } else if (func === 'findbugonfloor') {
+                                                setTempParams(prev => ({
+                                                    ...prev,
+                                                    bugs: prev?.bugs && prev.bugs.length ? prev.bugs : [{ bugKey: 'ong', value: 5 }]
                                                 }))
                                             } else {
                                                 setTempParams({})

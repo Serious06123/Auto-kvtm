@@ -244,75 +244,246 @@ const bugROIs = [
     { x: 712, y: 834, w: 106, h: 82 },
 ]
 
-const catchBugAtTwoNearestPots = async (driver, bugPercentX, bugPercentY) => {
-    const potsWithDistances = FirstRowSlotList.map((pot, index) => {
-        const dx = pot.x - bugPercentX
-        const dy = pot.y - bugPercentY
-        const dist = dx * dx + dy * dy
-        return { index, pot, dist }
-    })
-
-    potsWithDistances.sort((a, b) => a.dist - b.dist)
-
-    const nearestPots = potsWithDistances.slice(0, 2)
-
-    for (let item of nearestPots) {
-        const targetPot = item.pot
-        console.log(`Đang thử bắt bọ tại Chậu thứ ${item.index + 1} (Tọa độ chậu: ${targetPot.x}, ${targetPot.y})`)
-
-        await driver.tap(targetPot.x, targetPot.y)
-        await driver.sleep(0.5)
-
-        let votxanh = await driver.haveItemOnScreen(_getItemPath(ItemKeys.xanhbatbo), SlotPositions.p3p4)
-        if (votxanh) {
-            console.log(`Đã phát hiện thấy Vợt Xanh! Tiến hành kéo vợt bắt bọ.`)
-            const pointList = [{ duration: 0, x: votxanh.x, y: votxanh.y }]
-            const duration = 200 * DelayTime
-            pointList.push({
-                duration,
-                x: targetPot.x,
-                y: targetPot.y,
-            })
-            await driver.action(pointList)
-            await driver.sleep(1.0)
-            return true
-        } else {
-            console.log(`Chậu thứ ${item.index + 1} không có vợt xanh (không phải chậu bị bọ), đóng bảng chọn và thử chậu tiếp theo.`)
-            await backToGame(driver)
-            await driver.sleep(0.5)
-        }
+const catchBugAtPot = async (driver, potIndex, absoluteFloorIndex, startFloorIndex, checkedPots) => {
+    const potId = `${absoluteFloorIndex}_${potIndex}`
+    if (checkedPots.has(potId)) {
+        console.log(`Chậu thứ ${potIndex + 1} ở Tầng ${absoluteFloorIndex + 1} đã được kiểm tra hoặc là chậu liền kề chậu đã bắt bọ, bỏ qua.`)
+        return false
     }
-    return false
+
+    const floorOffsetOnScreen = absoluteFloorIndex - startFloorIndex
+    let targetPot
+    if (floorOffsetOnScreen === 0) {
+        targetPot = FirstRowSlotList[potIndex]
+    } else if (floorOffsetOnScreen === 1) {
+        targetPot = SecondRowSlotList[potIndex]
+    } else if (floorOffsetOnScreen === 2) {
+        targetPot = ThirdRowSlotList[potIndex]
+    } else {
+        targetPot = FourthRowSlotList[potIndex]
+    }
+
+    const targetX = targetPot.x
+    const targetY = targetPot.y
+
+    console.log(`Đang thử bắt bọ trực tiếp tại Chậu thứ ${potIndex + 1} ở Tầng ${absoluteFloorIndex + 1} (Tọa độ tap: ${targetX}, ${targetY})`)
+
+    await driver.tap(targetX, targetY)
+    await driver.sleep(0.5)
+    let votxanh = null
+    for (let i = 0; i <= 2; i++) {
+        votxanh = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.xanhbatbo), SlotPositions.batbo, 0.6)
+        if (votxanh) break
+        await driver.sleep(0.1)
+    }
+    if (votxanh) {
+        console.log(`Đã phát hiện thấy Vợt Xanh! Tiến hành kéo vợt bắt bọ.`)
+        const pointList = [{ duration: 0, x: votxanh.x, y: votxanh.y }]
+        const duration = 300 * DelayTime
+        pointList.push({
+            duration,
+            x: targetX + 1,
+            y: targetY - 1,
+        })
+        await driver.action(pointList)
+        await driver.sleep(0.2)
+        await driver.tap(94.6, 4.6)
+        // Khi bắt thành công, đánh dấu chậu này đã được xử lý
+        checkedPots.add(`${absoluteFloorIndex}_${potIndex}`)
+        return true
+    } else {
+        console.log(`Chậu thứ ${potIndex + 1} không có vợt xanh, đóng bảng chọn.`)
+        checkedPots.add(potId)
+        await driver.tap(94.6, 4.6)
+        await driver.sleep(0.2)
+        return false
+    }
 }
 
 const findbugonfloor = async (driver, BugKeys) => {
-    await goFriendHouse(driver, 0)
-    await driver.sleep(1)
-    for (let i = 0; i < 10; i++) {
-        await goUp(driver)
-        await driver.sleep(1)
+    // Chuẩn hóa và thiết lập giới hạn số lượng bắt cho từng loại bọ
+    const normalizeKey = (k) => {
+        if (k === 'ong' || k === 'ong-vang') return 'ong-vang'
+        if (k === 'buom' || k === 'buom-hong') return 'buom-hong'
+        if (k === 'chuonchuon' || k === 'chuon-chuon') return 'chuon-chuon'
+        return k
+    }
 
-        let screenshot1 = await driver.screenshot()
-        await driver.sleep(0.1)
-        let screenshot2 = await driver.screenshot()
-        let detectedBugs = await detectBugInROIs(screenshot1, screenshot2, bugROIs, BugKeys)
+    let limits = {}
+    let caughtCounts = {
+        'ong-vang': 0,
+        'buom-hong': 0,
+        'chuon-chuon': 0,
+    }
+    let bugTypesToDetect = []
 
-        if (detectedBugs.length > 0) {
-            console.log(`Phát hiện ${detectedBugs.length} con bọ trên tầng.`)
-            for (let bug of detectedBugs) {
-                const clickX = bug.roi.x + bug.roi.w / 2
-                const clickY = bug.roi.y + bug.roi.h / 2
-                const percentX = (clickX / 1000) * 100
-                const percentY = (clickY / 1000) * 100
-
-                await catchBugAtTwoNearestPots(driver, percentX, percentY)
+    if (Array.isArray(BugKeys)) {
+        for (let item of BugKeys) {
+            if (item && typeof item === 'object' && 'key' in item) {
+                const norm = normalizeKey(item.key)
+                limits[norm] = parseInt(item.value) || 9999
+                bugTypesToDetect.push(norm)
+            } else if (typeof item === 'string') {
+                const norm = normalizeKey(item)
+                limits[norm] = 9999
+                bugTypesToDetect.push(norm)
             }
         }
+    } else if (typeof BugKeys === 'string') {
+        const norm = normalizeKey(BugKeys)
+        limits[norm] = 9999
+        bugTypesToDetect.push(norm)
     }
-    await goFriendHouse(driver, 1)
+
+    if (bugTypesToDetect.length === 0) {
+        bugTypesToDetect = ['ong-vang', 'buom-hong', 'chuon-chuon']
+    }
+
+    await goFriendHouse(driver, 0)
     await driver.sleep(1)
-    await goUp(driver, 2)
-    await driver.sleep(0.5)
+
+    // Đầu tiên lên 1 tầng để hiện tầng 1 làm đáy màn hình
+    await goUp(driver, 1)
+    await driver.sleep(1)
+
+    let currentFloor = 1
+    let totalCaught = 0
+    while (currentFloor <= 10) {
+        // Kiểm tra xem tất cả các loại bọ muốn bắt đã đạt giới hạn chưa
+        let allLimitsReached = true
+        for (let type of bugTypesToDetect) {
+            if (caughtCounts[type] < (limits[type] || 9999)) {
+                allLimitsReached = false
+                break
+            }
+        }
+        if (allLimitsReached) {
+            console.log('Đã đạt giới hạn số lượng bắt cho tất cả các loại bọ được chỉ định. Dừng quét.')
+            break
+        }
+
+        const baseFloor = currentFloor
+        let checkedPots = new Set()
+
+        // Lọc ra các loại bọ còn chưa bắt đủ giới hạn để truyền vào detector
+        let activeBugsForRound = bugTypesToDetect.filter((type) => caughtCounts[type] < (limits[type] || 9999))
+        if (activeBugsForRound.length === 0) break
+
+        // Tầng đáy màn hình hiện tại chính là baseFloor - 1
+        let startFloorIndex = baseFloor - 1
+
+        // Xây dựng ROIs cho 4 tầng hiển thị (Dòng 1, 2, 3, 4)
+        let allROIs = []
+        for (let floorOffset = 0; floorOffset < 4; floorOffset++) {
+            const actualFloorIndex = startFloorIndex + floorOffset
+            if (actualFloorIndex >= 10) break // Không vượt quá Tầng 10
+
+            for (let roi of bugROIs) {
+                allROIs.push({
+                    x: roi.x,
+                    y: roi.y - floorOffset * 220,
+                    w: roi.w,
+                    h: roi.h,
+                    floorIndex: actualFloorIndex,
+                })
+            }
+        }
+
+        if (allROIs.length === 0) break
+
+        console.log(`Đang chụp ảnh phân tích Tầng ${startFloorIndex + 1} đến ${Math.min(10, startFloorIndex + 4)}...`)
+        let screenshots = []
+        for (let s = 0; s < 3; s++) {
+            screenshots.push(await driver.screenshot())
+            await driver.sleep(0.2)
+        }
+
+        let detectedBugs = await detectBugInROIs(screenshots, allROIs, activeBugsForRound, startFloorIndex)
+
+        // Phân loại bọ theo tầng
+        let bugsOnFloor1And2 = []
+        let bugsOnFloor3And4 = []
+
+        for (let bug of detectedBugs) {
+            const floorNum = bug.roi.floorIndex + 1
+            if (floorNum === baseFloor || floorNum === baseFloor + 1) {
+                bugsOnFloor1And2.push(bug)
+            } else if (floorNum === baseFloor + 2 || floorNum === baseFloor + 3) {
+                bugsOnFloor3And4.push(bug)
+            }
+        }
+
+        // 1. Tiến hành bắt bọ ở Tầng 1 & 2 trước (đang ở vùng an toàn Dòng 1 & Dòng 2)
+        if (bugsOnFloor1And2.length > 0) {
+            console.log(`Phát hiện bọ ở Tầng ${baseFloor} hoặc ${baseFloor + 1}. Bắt bọ...`)
+            for (let bug of bugsOnFloor1And2) {
+                const normBugKey = normalizeKey(bug.bugKey)
+                if (caughtCounts[normBugKey] >= (limits[normBugKey] || 9999)) continue
+
+                const potId = `${bug.roi.floorIndex}_${bug.index - 1}`
+                if (checkedPots.has(potId)) continue
+
+                let success = await catchBugAtPot(driver, bug.index - 1, bug.roi.floorIndex, startFloorIndex, checkedPots)
+                if (success) {
+                    totalCaught++
+                    caughtCounts[normBugKey]++
+                }
+            }
+        }
+
+        // 2. Kiểm tra xem có bọ ở Tầng 3 hoặc Tầng 4 hay không
+        const hasBugsOnFloor3Or4 = bugsOnFloor3And4.length > 0
+
+        if (hasBugsOnFloor3Or4) {
+            // Có bọ ở tầng 3/4 -> Cuộn lên 2 tầng để đưa tầng 3/4 xuống thành Dòng 1/2 để bắt
+            console.log(`Phát hiện bọ ở Tầng ${baseFloor + 2} hoặc ${baseFloor + 3}. Cuộn lên 2 tầng để bắt...`)
+            await goUp(driver, 2)
+            await driver.sleep(1)
+
+            // Lúc này đáy màn hình mới là Tầng 3 (startFloorIndex = baseFloor + 1)
+            const newStartFloorIndex = baseFloor + 1
+
+            for (let bug of bugsOnFloor3And4) {
+                const normBugKey = normalizeKey(bug.bugKey)
+                if (caughtCounts[normBugKey] >= (limits[normBugKey] || 9999)) continue
+
+                const potId = `${bug.roi.floorIndex}_${bug.index - 1}`
+                if (checkedPots.has(potId)) continue
+
+                let success = await catchBugAtPot(driver, bug.index - 1, bug.roi.floorIndex, newStartFloorIndex, checkedPots)
+                if (success) {
+                    totalCaught++
+                    caughtCounts[normBugKey]++
+                }
+            }
+
+            // Vì đã cuộn 2 tầng để bắt bọ, nên lần tiếp theo sẽ quét từ Tầng baseFloor + 4
+            // Cần cuộn thêm 2 tầng nữa để vượt qua các tầng đã xử lý (chỉ cuộn khi chưa hoàn thành Tầng 10)
+            if (baseFloor < 7) {
+                console.log(`Hoàn thành cụm. Cuộn thêm 2 tầng để chuyển sang cụm tiếp theo...`)
+                await goUp(driver, 2)
+                await driver.sleep(1)
+            }
+            currentFloor = baseFloor + 4
+        } else {
+            // Không có bọ ở Tầng 3/4 -> Cuộn thẳng lên 4 tầng để chuyển sang cụm tiếp theo
+            if (baseFloor < 7) {
+                console.log(`Không có bọ ở Tầng ${baseFloor + 2} và ${baseFloor + 3}. Cuộn thẳng lên 4 tầng để quét tiếp...`)
+                await goUp(driver, 4)
+                await driver.sleep(1)
+            }
+            currentFloor = baseFloor + 4
+        }
+    }
+    if (totalCaught > 0) {
+        console.log(`Đã bắt được ${totalCaught} con bọ, thực hiện chuyển đổi nhà bạn bè để nhận quà...`)
+        await goFriendHouse(driver, 1)
+        await driver.sleep(1)
+        await goUp(driver, 2)
+        await driver.sleep(0.5)
+    } else {
+        console.log(`Không bắt được con bọ nào trong lượt chạy này.`)
+    }
     await goMyHouse(driver)
 }
 
@@ -898,8 +1069,7 @@ const readNumbersAndSave = async (driver, type) => {
         // Đảm bảo ép chuẩn Base64 String
         const screenshotBase64 = typeof screenshotDataRaw === 'string' ? screenshotDataRaw : Buffer.isBuffer(screenshotDataRaw) ? screenshotDataRaw.toString('base64') : screenshotDataRaw.value || ''
 
-        // XIN LỖI JIMP, MÀY BỊ SA THẢI RỒI!
-        // Thay vì dùng Jimp gọt ảnh tốn 20% CPU và fs để ghi ổ cứng, ta gửi sống 100% qua RAM!
+        // Gửi dữ liệu ảnh trực tiếp qua RAM để tối ưu hóa CPU và giảm độ trễ ghi ổ cứng
 
         // Đảm bảo Máy chủ AI đang chạy, nếu tắt thì đánh thức nó dậy (nếu chưa gọi)
         await ensurePythonServer()
@@ -1063,7 +1233,7 @@ const readNumbersAndSave = async (driver, type) => {
             if (!current) current = '0'
             if (!max) max = '0'
 
-            // Luật 2: Sửa lỗi current quá lớn (Đã fix lỗi crash bằng cách ép lại thành String)
+            // Luật 2: Sửa lỗi current quá lớn
             while (current.length >= 2 && parseInt(current) >= parseInt(max) + 50 && parseInt(max) > 0) {
                 if (parseInt(current) / parseInt(max) <= 2) {
                     current = (parseInt(max) + 50).toString() // Quan trọng: Phải chuyển lại thành String

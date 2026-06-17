@@ -149,7 +149,7 @@ const ItemKeys = {
     chuaqc: 'chua-qc',
     xoavp: 'xoa-vp',
     dongy2: 'dong-y-2',
-    xanhbatbo: 'xanh-bat-bo',
+    xanhbatbo: 'vot-xanh',
 }
 
 const TreeKeys = {

@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { Modal, Button, Input, Select, InputNumber, Space, Divider, List, Form, Row, Col, Checkbox, Tabs, Radio, AutoComplete } from 'antd'
+import { Modal, Button, Input, Select, InputNumber, Space, Divider, List, Form, Row, Col, Checkbox, Tabs, Radio, AutoComplete, Typography } from 'antd'
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import axios from 'axios'
 import VisualLogicEditor from './VisualLogicEditor'
 
 const { TextArea } = Input
 const { Option } = Select
+const { Text } = Typography
 
 const slugify = (str) => {
   if (!str) return ''
@@ -107,6 +109,7 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto, categories 
     harvestTrees: 'Thu hoạch cây',
     plantTrees: 'Trồng cây',
     sellItems: 'Bán đồ',
+    findbugonfloor: 'Bắt bọ',
   }
 
   const addFunction = () => {
@@ -134,6 +137,10 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto, categories 
         const extraAdvert = funcParams.advertise === false ? ', false' : ''
         snippet += `, SellItemOptions.${funcParams.option || 'goods'}, [{ key: ${productRef}, value: ${funcParams.value || 20} }], mutex, mutex2, removeItems${extraAdvert}`
       }
+    } else if (selectedFunc === 'findbugonfloor') {
+      const bugs = funcParams.bugs || [{ bugKey: 'ong', value: 5 }]
+      const bugsArr = bugs.map(b => `{ key: BugKeys.${b.bugKey}, value: ${b.value} }`).join(', ')
+      snippet += `, [${bugsArr}]`
     } else {
       snippet += ''
     }
@@ -287,6 +294,49 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto, categories 
         </Row>
       )
     }
+    if (selectedFunc === 'findbugonfloor') {
+      const bugs = funcParams.bugs || []
+      const updateBug = (idx, field, val) => {
+        const newBugs = [...bugs]
+        newBugs[idx] = { ...newBugs[idx], [field]: val }
+        setFuncParams({ ...funcParams, bugs: newBugs })
+      }
+      const addBug = () => {
+        setFuncParams({ ...funcParams, bugs: [...bugs, { bugKey: 'ong', value: 5 }] })
+      }
+      const removeBug = (idx) => {
+        const newBugs = bugs.filter((_, i) => i !== idx)
+        setFuncParams({ ...funcParams, bugs: newBugs.length ? newBugs : [{ bugKey: 'ong', value: 5 }] })
+      }
+      return (
+        <>
+          <Row gutter={16} style={{ marginBottom: 12 }}>
+            <Col span={16}><Form.Item label="Danh sách bắt bọ và số lượng" style={{ marginBottom: 0 }} /></Col>
+            <Col span={8} style={{ display: 'flex', alignItems: 'flex-end' }}>
+              <Button type="dashed" icon={<PlusOutlined />} onClick={addBug} block>Thêm loại bọ</Button>
+            </Col>
+          </Row>
+          <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 8, background: '#fff' }}>
+            {bugs.map((it, idx) => (
+              <Row key={idx} gutter={8} style={{ marginBottom: 8 }} align="middle">
+                <Col span={2}><Text strong style={{ color: '#999' }}>#{idx + 1}</Text></Col>
+                <Col span={11}>
+                  <Select value={it.bugKey} onChange={v => updateBug(idx, 'bugKey', v)} style={{ width: '100%' }}>
+                    {Object.keys(metadata.consts?.BugKeys || {}).map(k => <Option key={k} value={k}>{k}</Option>)}
+                  </Select>
+                </Col>
+                <Col span={7}>
+                  <InputNumber min={1} value={it.value} onChange={v => updateBug(idx, 'value', v)} style={{ width: '100%' }} placeholder="SL" />
+                </Col>
+                <Col span={4}>
+                  <Button type="text" danger icon={<DeleteOutlined />} onClick={() => removeBug(idx)} disabled={bugs.length <= 1} />
+                </Col>
+              </Row>
+            ))}
+          </div>
+        </>
+      )
+    }
     return null
   }
 
@@ -364,7 +414,7 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto, categories 
         <Form layout="vertical">
           <Form.Item label="Chọn chức năng">
             <Row gutter={8}>
-              {['goUp', 'goDown', 'goDownLast', 'makeItems', 'sleep', 'harvestTrees', 'plantTrees', 'sellItems'].map(func => (
+              {['goUp', 'goDown', 'goDownLast', 'makeItems', 'sleep', 'harvestTrees', 'plantTrees', 'sellItems', 'findbugonfloor'].map(func => (
                 <Col key={func}>
                   <Button
                     type={selectedFunc === func ? 'primary' : 'default'}
@@ -377,6 +427,11 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto, categories 
                           option: prev?.option || 'goods',
                           itemKey: prev?.itemKey || (prev?.option === 'tree' ? 'dua' : 'traHoaHong'),
                           value: prev?.value || 20,
+                        }))
+                      } else if (func === 'findbugonfloor') {
+                        setFuncParams((prev) => ({
+                          ...prev,
+                          bugs: prev?.bugs && prev.bugs.length ? prev.bugs : [{ bugKey: 'ong', value: 5 }],
                         }))
                       } else {
                         setFuncParams({})

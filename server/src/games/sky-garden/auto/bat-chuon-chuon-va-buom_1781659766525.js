@@ -2,9 +2,9 @@ const core = require('../core')
 const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralKeys, OtherKeys, EventKeys, BugKeys } = require('../const')
 
 const produceItems = async (driver, isLast, mutex) => {
-  await core.findbugonfloor(driver, BugKeys.ong)
+  await core.findbugonfloor(driver, [{ key: BugKeys.chuonchuon, value: 10 }, { key: BugKeys.buom, value: 10 }])
   if (!isLast) {
-    await driver.sleep(8)
+    await driver.sleep(0)
   }
 }
 
@@ -15,9 +15,9 @@ module.exports = async (driver, gameOptions) => {
   const { quantity } = gameOptions;
   let mutex = { value: 0 };
   let mutex2 = { value: 0 };
-  for (let i = 0; i < 1; i++) {
+  for (let i = 0; i < 5; i++) {
     if (mutex.value != 1) {
-      await produceItems(driver, i == 0, mutex);
+      await produceItems(driver, i == 4, mutex);
     } 
   }
 
