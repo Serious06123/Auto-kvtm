@@ -491,6 +491,27 @@ const findbugonfloor = async (driver, BugKeys) => {
     } else {
         console.log(`Không bắt được con bọ nào trong lượt chạy này.`)
     }
+
+    let remainingActiveBugs = bugTypesToDetect.filter((type) => caughtCounts[type] < (limits[type] || 9999))
+    if (remainingActiveBugs.length > 0) {
+        if (driver.consecutiveEmptyBugRuns === undefined) {
+            driver.consecutiveEmptyBugRuns = 0
+        }
+        if (totalCaught === 0) {
+            driver.consecutiveEmptyBugRuns++
+            console.log(`[Bắt bọ Debug] Không tìm thấy bọ trong chu kỳ này. Số lần không thấy liên tiếp: ${driver.consecutiveEmptyBugRuns}/10`)
+            if (driver.consecutiveEmptyBugRuns >= 10) {
+                console.log(`[Bắt bọ] Không tìm thấy bọ trong 10 lần quét liên tiếp. Tiến hành mở lại game...`)
+                driver.consecutiveEmptyBugRuns = 0
+                await openGame(driver)
+            }
+        } else {
+            driver.consecutiveEmptyBugRuns = 0
+        }
+    } else {
+        driver.consecutiveEmptyBugRuns = 0
+    }
+
     await goMyHouse(driver)
 }
 
