@@ -353,6 +353,7 @@ const findbugonfloor = async (driver, BugKeys) => {
 
     let currentFloor = 1
     let totalCaught = 0
+    let totalDetectedThisRun = 0
     while (currentFloor <= 10) {
         // Kiểm tra xem tất cả các loại bọ muốn bắt đã đạt giới hạn chưa
         let allLimitsReached = true
@@ -404,6 +405,7 @@ const findbugonfloor = async (driver, BugKeys) => {
         }
 
         let detectedBugs = await detectBugInROIs(screenshots, allROIs, activeBugsForRound, startFloorIndex)
+        totalDetectedThisRun += detectedBugs.length
 
         // Phân loại bọ theo tầng
         let bugsOnFloor1And2 = []
@@ -497,7 +499,7 @@ const findbugonfloor = async (driver, BugKeys) => {
         if (driver.consecutiveEmptyBugRuns === undefined) {
             driver.consecutiveEmptyBugRuns = 0
         }
-        if (totalCaught === 0) {
+        if (totalDetectedThisRun === 0) {
             driver.consecutiveEmptyBugRuns++
             console.log(`[Bắt bọ Debug] Không tìm thấy bọ trong chu kỳ này. Số lần không thấy liên tiếp: ${driver.consecutiveEmptyBugRuns}/10`)
             if (driver.consecutiveEmptyBugRuns >= 10) {
