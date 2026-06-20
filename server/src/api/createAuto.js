@@ -28,6 +28,8 @@ const getMetadata = async (req, res, next) => {
     const functions = parseCoreExports()
     let consts = {}
     try {
+        const resolvedPath = require.resolve('../games/sky-garden/const')
+        delete require.cache[resolvedPath]
         consts = require('../games/sky-garden/const')
     } catch (e) {
         consts = {}

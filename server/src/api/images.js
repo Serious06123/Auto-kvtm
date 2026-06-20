@@ -30,6 +30,8 @@ const keyTypes = [
 
 function getImages(req, res) {
     try {
+        const resolvedPath = require.resolve('../games/sky-garden/const')
+        delete require.cache[resolvedPath]
         const constants = require('../games/sky-garden/const')
         const list = []
         const itemFolder = getItemFolderPath()

@@ -72,6 +72,8 @@ const handleUpload = (req, res) => {
                         if (!updated) {
                             return res.status(500).json({ error: 'Failed to update const.js (KeyType not found?)' })
                         }
+                        const constPath = path.resolve(__dirname, '../games/sky-garden/const.js')
+                        delete require.cache[constPath]
                     } catch (error) {
                         return res.status(500).json({ error: 'Error processing const.js: ' + error.message })
                     }
