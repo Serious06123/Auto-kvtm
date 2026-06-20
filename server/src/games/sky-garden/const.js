@@ -207,6 +207,9 @@ const ProductKeys = {
     nuocmit: 'nuoc-mit',
     hongsay: 'hong-say',
     mitsaytest: 'mit-say-test',
+    'p-buom': 'p-buom',
+    'p-ong': 'p-ong',
+    'p-chuon-chuon': 'p-chuon-chuon',
 }
 
 const ProductTreeKeys = {

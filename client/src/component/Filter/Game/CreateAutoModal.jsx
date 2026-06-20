@@ -126,14 +126,16 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto, categories 
       snippet += `, mutex, TreeKeys.${funcParams.treeKey || 'tuyet'}, ${funcParams.floor || 4}, ${funcParams.pot || 5}, ${funcParams.isRight !== false}` // default TRUE (Right)
     } else if (selectedFunc === 'sellItems') {
       if (funcParams.option === 'events') {
-        const eventRef = `EventKeys.${funcParams.itemKey || 'bo'}`
+        const keyRef = funcParams.itemKey || 'bo'
+        const eventRef = keyRef.includes('-') ? `EventKeys['${keyRef}']` : `EventKeys.${keyRef}`
         snippet = `await core.sellEventItems(driver, ${eventRef}, quantity, false)`
       } else {
+        const keyRef = funcParams.itemKey || 'traHoaHong'
         const productRef = funcParams.option === 'tree'
-          ? `ProductTreeKeys.${funcParams.itemKey || 'dua'}`
+          ? (keyRef.includes('-') ? `ProductTreeKeys['${keyRef}']` : `ProductTreeKeys.${keyRef}`)
           : funcParams.option === 'mineral'
-            ? `ProductMineralKeys.${funcParams.itemKey || 'thoidong'}`
-            : `ProductKeys.${funcParams.itemKey || 'traHoaHong'}`
+            ? (keyRef.includes('-') ? `ProductMineralKeys['${keyRef}']` : `ProductMineralKeys.${keyRef}`)
+            : (keyRef.includes('-') ? `ProductKeys['${keyRef}']` : `ProductKeys.${keyRef}`)
         const extraAdvert = funcParams.advertise === false ? ', false' : ''
         snippet += `, SellItemOptions.${funcParams.option || 'goods'}, [{ key: ${productRef}, value: ${funcParams.value || 20} }], mutex, mutex2, removeItems${extraAdvert}`
       }

@@ -16,17 +16,18 @@ const REGEX = {
     plantTrees: /await\s+core\.plantTrees\(\s*driver\s*,\s*mutex\s*,\s*TreeKeys\.(\w+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*(true|false))?\s*\);?/,
     // sellItems: parse cả mảng nhiều item lẫn đơn item, bắt thêm isAds và loop
     sellItems: /await\s+core\.sellItems\(\s*driver\s*,\s*SellItemOptions\.(\w+)\s*,\s*\[(.+?)\]\s*,\s*mutex\s*,\s*mutex2\s*,\s*removeItems(?:\s*,\s*(false|true))?(?:\s*,\s*(false|true))?\s*\);?/,
-    sellEventItems: /await\s+core\.sellEventItems\(\s*driver\s*,\s*EventKeys\.(\w+)\s*,\s*quantity\s*,\s*false\s*\);?/,
+    sellEventItems: /await\s+core\.sellEventItems\(\s*driver\s*,\s*EventKeys(?:\.(\w+)|\[\s*['"](.+?)['"]\s*\])\s*,\s*quantity\s*,\s*false\s*\);?/,
     findbugonfloor: /await\s+core\.findbugonfloor\(\s*driver\s*,\s*([\s\S]+?)\s*\);?/
 }
 
 // Helper: parse chuỗi items array string thành mảng object [{prefix, itemKey, value}]
 const parseItemsArray = (arrStr) => {
     const items = []
-    const re = /\{\s*key:\s*(ProductKeys\.|ProductMineralKeys\.|ProductTreeKeys\.|OtherKeys\.|EventKeys\.)(\w+),\s*value:\s*(\d+)\s*\}/g
+    const re = /\{\s*key:\s*(ProductKeys|ProductMineralKeys|ProductTreeKeys|OtherKeys|EventKeys)(?:\.(\w+)|\[\s*['"](.+?)['"]\s*\]),\s*value:\s*(\d+)\s*\}/g
     let m
     while ((m = re.exec(arrStr)) !== null) {
-        items.push({ prefix: m[1].replace(/\.$/, ''), itemKey: m[2], value: parseInt(m[3]) })
+        const itemKey = m[2] || m[3]
+        items.push({ prefix: m[1], itemKey, value: parseInt(m[4]) })
     }
     return items
 }
@@ -51,10 +52,16 @@ const TEMPLATES = {
         const prefix = getKeyPrefix(p.option)
         const extra = p.advertise === false ? ', false' : ', true'
         const loopParam = p.sellFullQty !== false ? ', false' : ''
-        const itemsArr = (p.items || []).map(it => `{ key: ${prefix}.${it.itemKey}, value: ${it.value} }`).join(', ')
+        const itemsArr = (p.items || []).map(it => {
+            const keyRef = it.itemKey.includes('-') ? `${prefix}['${it.itemKey}']` : `${prefix}.${it.itemKey}`
+            return `{ key: ${keyRef}, value: ${it.value} }`
+        }).join(', ')
         return `await core.sellItems(driver, SellItemOptions.${p.option}, [${itemsArr}], mutex, mutex2, removeItems${extra}${loopParam})`
     },
-    sellEventItems: (p) => `await core.sellEventItems(driver, EventKeys.${p.itemKey}, quantity, false)`,
+    sellEventItems: (p) => {
+        const keyRef = p.itemKey.includes('-') ? `EventKeys['${p.itemKey}']` : `EventKeys.${p.itemKey}`
+        return `await core.sellEventItems(driver, ${keyRef}, quantity, false)`
+    },
     findbugonfloor: (p) => {
         const bugs = p.bugs || []
         const bugsArr = bugs.map(b => `{ key: BugKeys.${b.bugKey}, value: ${b.value} }`).join(', ')
@@ -115,7 +122,7 @@ const VisualLogicEditor = ({ value, onChange, metadata, inputFunc, inputParams, 
                             params.sellFullQty = false // không có tham số loop = mặc định loop=true = không tick
                         }
                     }
-                    if (key === 'sellEventItems') { params.itemKey = match[1]; params.option = 'events' }
+                    if (key === 'sellEventItems') { params.itemKey = match[1] || match[2]; params.option = 'events' }
                     if (key === 'findbugonfloor') {
                         const argStr = match[1].trim()
                         let bugs = []
