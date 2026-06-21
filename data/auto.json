@@ -318,6 +318,54 @@
             "order": 0,
             "recommend": false,
             "category": "tree"
+        },
+        {
+            "key": "test-bantddthh_1780539850543",
+            "name": "test-bantdd+thh",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category": "other"
+        },
+        {
+            "key": "bat-ong-va-buom_1781461322426",
+            "name": "Bắt ong và bướm",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category": "Bọ"
+        },
+        {
+            "key": "bat-chuon-chuon-va-buom_1781659766525",
+            "name": "Bắt chuồn chuồn và bướm",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category": "Bọ"
+        },
+        {
+            "key": "bat-ong-va-chuon-chuon_1781661024919",
+            "name": "Bắt ong và chuồn chuồn",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category": "Bọ"
+        },
+        {
+            "key": "bat-3-loai-bo_1781662466292",
+            "name": "Bắt 3 loại bọ",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category": "Bọ"
+        },
+        {
+            "key": "xa-bo_1781998615044",
+            "name": "Xả bọ",
+            "disabled": false,
+            "order": 0,
+            "recommend": false,
+            "category": "Bọ"
         }
     ]
 }
