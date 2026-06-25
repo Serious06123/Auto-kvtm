@@ -113,6 +113,14 @@
             "category": "event"
         },
         {
+            "key": "xa-vpsk-kinh",
+            "name": "Xả VPSK - Kính",
+            "disabled": false,
+            "order": 10,
+            "recommend": false,
+            "category": "event"
+        },
+        {
             "key": "xa-vpsk-ga",
             "name": "Xả VPSK - Gà",
             "disabled": false,

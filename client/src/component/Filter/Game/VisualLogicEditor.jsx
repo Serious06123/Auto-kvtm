@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Button, List, Space, Card, Form, Select, InputNumber, Row, Col, Modal, Typography, Tooltip, Tag, Checkbox } from 'antd'
+import { Button, List, Space, Card, Form, Select, InputNumber, Row, Col, Modal, Typography, Tooltip, Tag, Checkbox, Input } from 'antd'
 import { DeleteOutlined, EditOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusOutlined } from '@ant-design/icons'
 
 const { Option } = Select
@@ -23,11 +23,13 @@ const REGEX = {
 // Helper: parse chuỗi items array string thành mảng object [{prefix, itemKey, value}]
 const parseItemsArray = (arrStr) => {
     const items = []
-    const re = /\{\s*key:\s*(ProductKeys|ProductMineralKeys|ProductTreeKeys|OtherKeys|EventKeys)(?:\.(\w+)|\[\s*['"](.+?)['"]\s*\]),\s*value:\s*(\d+)\s*\}/g
+    const re = /\{\s*key:\s*(ProductKeys|ProductMineralKeys|ProductTreeKeys|OtherKeys|EventKeys)(?:\.(\w+)|\[\s*['"](.+?)['"]\s*\]),\s*value:\s*(\w+)\s*\}/g
     let m
     while ((m = re.exec(arrStr)) !== null) {
         const itemKey = m[2] || m[3]
-        items.push({ prefix: m[1], itemKey, value: parseInt(m[4]) })
+        const valToken = m[4]
+        const val = /^\d+$/.test(valToken) ? parseInt(valToken) : valToken
+        items.push({ prefix: m[1], itemKey, value: val })
     }
     return items
 }
@@ -37,6 +39,7 @@ const getKeyPrefix = (option) => {
     if (option === 'tree') return 'ProductTreeKeys'
     if (option === 'mineral') return 'ProductMineralKeys'
     if (option === 'other') return 'OtherKeys'
+    if (option === 'events') return 'EventKeys'
     return 'ProductKeys'
 }
 
@@ -54,7 +57,8 @@ const TEMPLATES = {
         const loopParam = p.sellFullQty !== false ? ', false' : ''
         const itemsArr = (p.items || []).map(it => {
             const keyRef = it.itemKey.includes('-') ? `${prefix}['${it.itemKey}']` : `${prefix}.${it.itemKey}`
-            return `{ key: ${keyRef}, value: ${it.value} }`
+            const valStr = p.option === 'events' ? 'quantity' : it.value
+            return `{ key: ${keyRef}, value: ${valStr} }`
         }).join(', ')
         return `await core.sellItems(driver, SellItemOptions.${p.option}, [${itemsArr}], mutex, mutex2, removeItems${extra}${loopParam})`
     },
@@ -114,15 +118,20 @@ const VisualLogicEditor = ({ value, onChange, metadata, inputFunc, inputParams, 
                         params.option = match[1]
                         // match[2] chứa nội dung mảng items, parse ra thành array
                         params.items = parseItemsArray(match[2])
-                        params.advertise = match[4] !== 'false'
-                        // match[5] là ", false" hoặc ", true" của loop. Nếu loop=false -> sellFullQty=true (ngược logic)
-                        if (match[5]) {
-                            params.sellFullQty = match[6] === 'false'
+                        params.advertise = match[3] !== 'false'
+                        if (typeof match[4] !== 'undefined') {
+                            params.sellFullQty = match[4] === 'false'
                         } else {
-                            params.sellFullQty = false // không có tham số loop = mặc định loop=true = không tick
+                            params.sellFullQty = false
                         }
                     }
-                    if (key === 'sellEventItems') { params.itemKey = match[1] || match[2]; params.option = 'events' }
+                    if (key === 'sellEventItems') {
+                        const itemKey = match[1] || match[2]
+                        params.option = 'events'
+                        params.items = [{ itemKey: itemKey, value: 20 }]
+                        params.advertise = true
+                        params.sellFullQty = false
+                    }
                     if (key === 'findbugonfloor') {
                         const argStr = match[1].trim()
                         let bugs = []
@@ -146,7 +155,7 @@ const VisualLogicEditor = ({ value, onChange, metadata, inputFunc, inputParams, 
                         }
                         params.bugs = bugs
                     }
- 
+
                     return { type: key === 'sellEventItems' ? 'sellItems' : key, params, original: line, isCustom: false }
                 }
             }
@@ -158,7 +167,7 @@ const VisualLogicEditor = ({ value, onChange, metadata, inputFunc, inputParams, 
     const updateLogic = (newSteps) => {
         const code = newSteps.map(s => {
             if (s.isCustom) return s.original
-            const tpl = s.type === 'sellItems' && s.params.option === 'events' ? TEMPLATES.sellEventItems : TEMPLATES[s.type]
+            const tpl = TEMPLATES[s.type]
             return tpl ? tpl(s.params) : s.original
         }).join('\n')
         onChange(code)
@@ -230,13 +239,9 @@ const VisualLogicEditor = ({ value, onChange, metadata, inputFunc, inputParams, 
         }
         if (selectedFunc === 'sellItems') {
             newStep.params.option = newStep.params.option || 'goods'
-            if (newStep.params.option === 'events') {
-                newStep.params.itemKey = newStep.params.itemKey || 'bo'
-            } else {
-                if (!newStep.params.items || !newStep.params.items.length) {
-                    const defKey = newStep.params.option === 'tree' ? 'dua' : (newStep.params.option === 'mineral' ? 'thoidong' : 'traHoaHong')
-                    newStep.params.items = [{ itemKey: defKey, value: 20 }]
-                }
+            if (!newStep.params.items || !newStep.params.items.length) {
+                const defKey = newStep.params.option === 'tree' ? 'dua' : (newStep.params.option === 'mineral' ? 'thoidong' : (newStep.params.option === 'events' ? 'bo' : (newStep.params.option === 'other' ? 'gach' : 'traHoaHong')))
+                newStep.params.items = [{ itemKey: defKey, value: 20 }]
             }
         }
 
@@ -265,10 +270,13 @@ const VisualLogicEditor = ({ value, onChange, metadata, inputFunc, inputParams, 
             case 'harvestTrees': return <Tag color="green">Thu hoạch: {p.floor} tầng, {p.pot} chậu</Tag>
             case 'plantTrees': return <Tag color="lime">Trồng {p.treeKey}: {p.floor} tầng, {p.pot} chậu {p.isRight === false ? '(Trái)' : '(Phải)'}</Tag>
             case 'sellItems': {
-                if (p.option === 'events') return <Tag color="gold">Bán Event: {p.itemKey}</Tag>
-                const itemsList = (p.items || []).map(it => `${it.itemKey}(${it.value})`).join(', ')
-                const fullTag = p.sellFullQty !== false ? ' ✅' : ''
-                return <Tag color="gold">Bán [{itemsList}] ({p.option}){fullTag} {p.advertise === false ? '(No Ad)' : ''}</Tag>
+                const itemsList = (p.items || []).map(it => {
+                    const val = p.option === 'events' ? 'quantity' : it.value
+                    return `${it.itemKey}(${val})`
+                }).join(', ')
+                const fullTag = p.sellFullQty !== false ? ' (Đang bán đủ số lượng ✅)' : '(Không cần bán đủ số lượng ❌)'
+                const adTag = p.advertise === false ? ' (Đang không quảng cáo)' : ' (Đang quảng cáo)'
+                return <Tag color="gold">Bán [{itemsList}] ({p.option}){fullTag} {adTag}</Tag>
             }
             case 'findbugonfloor': {
                 const bugsList = (p.bugs || []).map(b => `${b.bugKey}(${b.value})`).join(', ')
@@ -394,36 +402,13 @@ const VisualLogicEditor = ({ value, onChange, metadata, inputFunc, inputParams, 
                 setP('items', newItems)
             }
             const addItem = () => {
-                const defKey = tempParams.option === 'tree' ? 'dua' : (tempParams.option === 'mineral' ? 'thoidong' : (tempParams.option === 'other' ? 'gach' : 'traHoaHong'))
+                const defKey = tempParams.option === 'tree' ? 'dua' : (tempParams.option === 'mineral' ? 'thoidong' : (tempParams.option === 'other' ? 'gach' : (tempParams.option === 'events' ? 'bo' : 'traHoaHong')))
                 setP('items', [...items, { itemKey: defKey, value: 20 }])
             }
             const removeItem = (idx) => {
                 const newItems = items.filter((_, i) => i !== idx)
-                setP('items', newItems.length ? newItems : [{ itemKey: 'traHoaHong', value: 20 }])
-            }
-
-            if (tempParams.option === 'events') {
-                return (
-                    <>
-                        <Row gutter={16}>
-                            <Col span={12}>
-                                <Form.Item label="Loại">
-                                    <Select value={tempParams.option} onChange={v => { setP('option', v); setP('items', []) }}>
-                                        {Object.keys(sellOptions).map(k => <Option key={k} value={k}>{k}</Option>)}
-                                        <Option value="events">Events</Option>
-                                    </Select>
-                                </Form.Item>
-                            </Col>
-                            <Col span={12}>
-                                <Form.Item label="Item">
-                                    <Select value={tempParams.itemKey} onChange={v => setP('itemKey', v)} showSearch>
-                                        {Object.keys(getKeys()).map(k => <Option key={k} value={k}>{k}</Option>)}
-                                    </Select>
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                    </>
-                )
+                const defKey = tempParams.option === 'events' ? 'bo' : 'traHoaHong'
+                setP('items', newItems.length ? newItems : [{ itemKey: defKey, value: 20 }])
             }
 
             return (
@@ -459,7 +444,11 @@ const VisualLogicEditor = ({ value, onChange, metadata, inputFunc, inputParams, 
                                     </Select>
                                 </Col>
                                 <Col span={7}>
-                                    <InputNumber min={1} value={it.value} onChange={v => updateItem(idx, 'value', v)} style={{ width: '100%' }} placeholder="SL" />
+                                    {tempParams.option === 'events' ? (
+                                        <Input value="quantity" disabled style={{ width: '100%' }} />
+                                    ) : (
+                                        <InputNumber min={1} value={it.value} onChange={v => updateItem(idx, 'value', v)} style={{ width: '100%' }} placeholder="SL" />
+                                    )}
                                 </Col>
                                 <Col span={4}>
                                     <Button type="text" danger icon={<DeleteOutlined />} onClick={() => removeItem(idx)} disabled={items.length <= 1} />

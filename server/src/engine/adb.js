@@ -1,5 +1,6 @@
 const Bluebird = require('bluebird')
 const path = require('path')
+const { execSync } = require('child_process')
 const { runExecAsync, runSpawn } = require('../helper/shell')
 const { logErrMsg } = require('../services/log')
 
@@ -13,6 +14,32 @@ const getAdbPath = () => {
         return path.join(__dirname, '../../../bin/platform-tools/adb-linux') // Rename your linux binary to this
     }
 }
+
+// Auto detect available ADB port to avoid conflict
+const detectAdbPort = () => {
+    if (process.env.ANDROID_ADB_SERVER_PORT) {
+        console.log(`[ADB] Using pre-configured ADB port: ${process.env.ANDROID_ADB_SERVER_PORT}`)
+        return
+    }
+    const adbBin = getAdbPath()
+    const portsToTry = [5037, 5038, 5039, 5040, 5041, 5042, 5043, 5044, 5045]
+    for (const port of portsToTry) {
+        try {
+            // Run a quick check using start-server on the specific port with a timeout
+            execSync(`"${adbBin}" -P ${port} start-server`, { stdio: 'ignore', timeout: 4000 })
+            process.env.ANDROID_ADB_SERVER_PORT = port.toString()
+            console.log(`[ADB] Successfully connected/started ADB daemon on port ${port}`)
+            return
+        } catch (err) {
+            console.log(`[ADB] Port ${port} failed to start-server or in use, trying next...`)
+        }
+    }
+    // Fallback if everything fails
+    process.env.ANDROID_ADB_SERVER_PORT = '5037'
+    console.log(`[ADB] All probed ports failed, falling back to default port 5037`)
+}
+
+detectAdbPort()
 
 const adbPath = `"${getAdbPath()}"`
 

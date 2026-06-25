@@ -1,5 +1,5 @@
 const core = require('../core')
-const { SellItemOptions, ProductKeys, TreeKeys , ProductTreeKeys, ProductMineralKeys ,OtherKeys, EventKeys } = require('../const')
+const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralKeys, OtherKeys, EventKeys, BugKeys } = require('../const')
 
 const produceItems = async (driver, isLast, mutex) => {
   await core.goUp(driver, 1)
@@ -20,7 +20,7 @@ const produceItems = async (driver, isLast, mutex) => {
 
 const sellItems = async (driver, mutex, mutex2, removeItems = false, quantity = 0) => {
   // Sell Goods
-  await core.sellItems(driver, SellItemOptions.tree, [{ key: ProductTreeKeys.duaHau, value: 48 }], mutex, mutex2, removeItems, true)
+  await core.sellItems(driver, SellItemOptions.tree, [{ key: ProductTreeKeys.duaHau, value: 48 }], mutex, mutex2, removeItems, true, false)
 }
 
 // auto generated

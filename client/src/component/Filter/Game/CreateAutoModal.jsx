@@ -125,20 +125,18 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto, categories 
     } else if (selectedFunc === 'plantTrees') {
       snippet += `, mutex, TreeKeys.${funcParams.treeKey || 'tuyet'}, ${funcParams.floor || 4}, ${funcParams.pot || 5}, ${funcParams.isRight !== false}` // default TRUE (Right)
     } else if (selectedFunc === 'sellItems') {
-      if (funcParams.option === 'events') {
-        const keyRef = funcParams.itemKey || 'bo'
-        const eventRef = keyRef.includes('-') ? `EventKeys['${keyRef}']` : `EventKeys.${keyRef}`
-        snippet = `await core.sellEventItems(driver, ${eventRef}, quantity, false)`
-      } else {
-        const keyRef = funcParams.itemKey || 'traHoaHong'
-        const productRef = funcParams.option === 'tree'
-          ? (keyRef.includes('-') ? `ProductTreeKeys['${keyRef}']` : `ProductTreeKeys.${keyRef}`)
-          : funcParams.option === 'mineral'
-            ? (keyRef.includes('-') ? `ProductMineralKeys['${keyRef}']` : `ProductMineralKeys.${keyRef}`)
+      const keyRef = funcParams.itemKey || (funcParams.option === 'events' ? 'bo' : 'traHoaHong')
+      const productRef = funcParams.option === 'tree'
+        ? (keyRef.includes('-') ? `ProductTreeKeys['${keyRef}']` : `ProductTreeKeys.${keyRef}`)
+        : funcParams.option === 'mineral'
+          ? (keyRef.includes('-') ? `ProductMineralKeys['${keyRef}']` : `ProductMineralKeys.${keyRef}`)
+          : funcParams.option === 'events'
+            ? (keyRef.includes('-') ? `EventKeys['${keyRef}']` : `EventKeys.${keyRef}`)
             : (keyRef.includes('-') ? `ProductKeys['${keyRef}']` : `ProductKeys.${keyRef}`)
-        const extraAdvert = funcParams.advertise === false ? ', false' : ''
-        snippet += `, SellItemOptions.${funcParams.option || 'goods'}, [{ key: ${productRef}, value: ${funcParams.value || 20} }], mutex, mutex2, removeItems${extraAdvert}`
-      }
+      const extraAdvert = funcParams.advertise === false ? ', false' : (funcParams.sellFullQty ? ', true' : '')
+      const loopParam = funcParams.sellFullQty ? ', false' : ''
+      const valStr = funcParams.option === 'events' ? 'quantity' : (funcParams.value || 20)
+      snippet += `, SellItemOptions.${funcParams.option || 'goods'}, [{ key: ${productRef}, value: ${valStr} }], mutex, mutex2, removeItems${extraAdvert}${loopParam}`
     } else if (selectedFunc === 'findbugonfloor') {
       const bugs = funcParams.bugs || [{ bugKey: 'ong', value: 5 }]
       const bugsArr = bugs.map(b => `{ key: BugKeys.${b.bugKey}, value: ${b.value} }`).join(', ')
@@ -279,14 +277,29 @@ const CreateAutoModal = ({ open, onClose, selectedGame, editingAuto, categories 
           </Col>
           <Col span={8}>
             <Form.Item label="Số lượng bán">
-              <Space>
-                <InputNumber min={1} value={funcParams.value} onChange={(v) => setFuncParams({ ...funcParams, value: v })} />
+              <Space direction="vertical" style={{ alignItems: 'flex-start' }}>
+                <Space>
+                  {funcParams.option === 'events' ? (
+                    <Input value="quantity" disabled style={{ width: 80 }} />
+                  ) : (
+                    <InputNumber min={1} value={funcParams.value} onChange={(v) => setFuncParams({ ...funcParams, value: v })} />
+                  )}
+                  {(() => {
+                    const checked = typeof funcParams.advertise === 'undefined' ? true : !!funcParams.advertise
+                    return (
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <input type="checkbox" checked={checked} onChange={(e) => setFuncParams({ ...funcParams, advertise: e.target.checked })} />
+                        <span>Quảng cáo</span>
+                      </label>
+                    )
+                  })()}
+                </Space>
                 {(() => {
-                  const checked = typeof funcParams.advertise === 'undefined' ? true : !!funcParams.advertise
+                  const checked = !!funcParams.sellFullQty
                   return (
                     <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                      <input type="checkbox" checked={checked} onChange={(e) => setFuncParams({ ...funcParams, advertise: e.target.checked })} />
-                      <span>Quảng cáo</span>
+                      <input type="checkbox" checked={checked} onChange={(e) => setFuncParams({ ...funcParams, sellFullQty: e.target.checked })} />
+                      <span>Bán đủ số lượng mới chạy auto tiếp</span>
                     </label>
                   )
                 })()}

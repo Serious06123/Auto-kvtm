@@ -80,7 +80,7 @@ class Runner {
             'appium:options': {
                 udid: deviceId,
                 automationName: 'UiAutomator2',
-                adbPort: 5037,
+                adbPort: parseInt(process.env.ANDROID_ADB_SERVER_PORT || '5037', 10),
                 noReset: true,
                 disableWindowAnimation: true,
                 suppressKillServer: true,
