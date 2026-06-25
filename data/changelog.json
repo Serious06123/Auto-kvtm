@@ -1,0 +1,19 @@
+[
+  {
+    "version": "3.0.7",
+    "date": "2026-06-25",
+    "changes": [
+      "Đã hỗ trợ hiển thị đầy đủ cài đặt Quảng Cáo, Thêm Món, và Bán đủ số lượng cho vật phẩm Sự Kiện (Events).",
+      "Tự động chuyển đổi số lượng bán của Events thành biến quantity động.",
+      "Tự động phát hiện và chuyển đổi cổng kết nối ADB (5037 -> 5045) tránh xung đột giữa các giả lập hoặc tool khác."
+    ]
+  },
+  {
+    "version": "3.0.6",
+    "date": "2026-06-10",
+    "changes": [
+      "Tối ưu hóa thuật toán nhận diện ảnh bọ trên tầng.",
+      "Nâng cấp tốc độ phản hồi kéo màn hình."
+    ]
+  }
+]

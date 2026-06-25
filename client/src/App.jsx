@@ -1,8 +1,8 @@
 const moment = require('moment')
 import React, { useState, useEffect } from 'react'
-import { Layout, ConfigProvider, notification, Button } from 'antd'
+import { Layout, ConfigProvider, notification, Button, Modal, Timeline } from 'antd'
 const { Header, Content, Footer } = Layout
-import { SyncOutlined } from '@ant-design/icons'
+import { SyncOutlined, HistoryOutlined } from '@ant-design/icons'
 import axios from 'axios'
 import * as styles from './App.module.css'
 
@@ -15,6 +15,18 @@ const UPDATE_CHECK_URL = 'https://raw.githubusercontent.com/Serious06123/Auto-kv
 const App = (props) => {
     const [refreshTime, setRefreshTime] = useState(moment().format('LTS'))
     const [updating, setUpdating] = useState(false)
+    const [changelogVisible, setChangelogVisible] = useState(false)
+    const [changelogData, setChangelogData] = useState([])
+
+    const showChangelog = async () => {
+        setChangelogVisible(true)
+        try {
+            const { data } = await axios.get('/api/changelog')
+            setChangelogData(data)
+        } catch (error) {
+            console.error('Không thể tải nhật ký cập nhật:', error)
+        }
+    }
 
     const performUpdate = async () => {
         setUpdating(true)
@@ -131,15 +143,25 @@ const App = (props) => {
                             <h1 className={styles.title}>Auto Tools</h1>
                             <span className={styles.subtitle}>Manager</span>
                         </div>
-                        <Button 
-                            type="dashed" 
-                            size="small" 
-                            icon={<SyncOutlined />} 
-                            onClick={() => handleCheckUpdate(true)}
-                            title="Vào kho xem có bản Update nào không"
-                        >
-                            Kiểm tra cập nhật
-                        </Button>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <Button 
+                                type="dashed" 
+                                size="small" 
+                                icon={<HistoryOutlined />} 
+                                onClick={showChangelog}
+                            >
+                                Nhật ký cập nhật
+                            </Button>
+                            <Button 
+                                type="dashed" 
+                                size="small" 
+                                icon={<SyncOutlined />} 
+                                onClick={() => handleCheckUpdate(true)}
+                                title="Vào kho xem có bản Update nào không"
+                            >
+                                Kiểm tra cập nhật
+                            </Button>
+                        </div>
                     </div>
                 </Header>
                 <Content className={styles.content}>
@@ -157,6 +179,45 @@ const App = (props) => {
                     Auto Tool ©2024 - v{__APP_VERSION__}
                 </Footer>
             </Layout>
+
+            <Modal
+                title="Nhật ký cập nhật"
+                open={changelogVisible}
+                onCancel={() => setChangelogVisible(false)}
+                footer={[
+                    <Button key="close" type="primary" onClick={() => setChangelogVisible(false)}>
+                        Đóng
+                    </Button>
+                ]}
+                width={650}
+            >
+                <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '10px 0' }}>
+                    {changelogData.length > 0 ? (
+                        <Timeline
+                            items={changelogData.map((item, index) => ({
+                                color: index === 0 ? 'green' : 'gray',
+                                children: (
+                                    <div key={item.version}>
+                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                                            <strong style={{ fontSize: '16px' }}>v{item.version}</strong>
+                                            <span style={{ color: '#999', fontSize: '12px' }}>{item.date}</span>
+                                        </div>
+                                        <ul style={{ marginTop: '6px', paddingLeft: '20px', listStyleType: 'disc' }}>
+                                            {item.changes.map((change, idx) => (
+                                                <li key={idx} style={{ marginBottom: '4px', fontSize: '13px' }}>
+                                                    {change}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )
+                            }))}
+                        />
+                    ) : (
+                        <div style={{ textAlign: 'center', color: '#999', padding: '20px 0' }}>Đang tải thông tin...</div>
+                    )}
+                </div>
+            </Modal>
         </ConfigProvider>
     )
 }

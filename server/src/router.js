@@ -11,6 +11,7 @@ const { getAiStatus, installAi } = require('./api/ai')
 const { getImages, viewImage, updateImage, deleteImage } = require('./api/images')
 const { getCustomCategories, addCustomCategory } = require('./api/custom_categories')
 const { updateApp } = require('./api/updateApp')
+const { getChangelog } = require('./api/changelog')
 
 // default
 router.get('/', function (req, res) {
@@ -58,5 +59,8 @@ router.post('/customCategories', addCustomCategory)
 
 // update app api
 router.post('/updateApp', updateApp)
+
+// changelog api
+router.get('/changelog', getChangelog)
 
 module.exports = router
