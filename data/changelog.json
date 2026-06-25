@@ -1,5 +1,12 @@
 [
   {
+    "version": "3.0.8",
+    "date": "2026-06-25",
+    "changes": [
+      "Thêm chức năng xem lịch sử cập nhật"
+    ]
+  },
+  {
     "version": "3.0.7",
     "date": "2026-06-25",
     "changes": [
