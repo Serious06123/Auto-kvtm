@@ -1,5 +1,12 @@
 [
   {
+    "version": "3.0.9",
+    "date": "2026-06-25",
+    "changes": [
+      "Thêm tính năng xem thông tin cập nhật khi có phiên bản mới , có thể ấn bỏ qua nếu không muốn cập nhật"
+    ]
+  },
+  {
     "version": "3.0.8",
     "date": "2026-06-25",
     "changes": [
