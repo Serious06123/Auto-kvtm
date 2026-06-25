@@ -1,6 +1,6 @@
 const moment = require('moment')
 import React, { useState, useEffect } from 'react'
-import { Layout, ConfigProvider, notification, Button, Modal, Timeline } from 'antd'
+import { Layout, ConfigProvider, notification, Button, Modal, Timeline, Space } from 'antd'
 const { Header, Content, Footer } = Layout
 import { SyncOutlined, HistoryOutlined } from '@ant-design/icons'
 import axios from 'axios'
@@ -11,6 +11,7 @@ import Table from './component/Content/Table'
 import UploadImage from './component/UploadImage'
 
 const UPDATE_CHECK_URL = 'https://raw.githubusercontent.com/Serious06123/Auto-kvtm/main/package.json'
+const REMOTE_CHANGELOG_URL = 'https://raw.githubusercontent.com/Serious06123/Auto-kvtm/main/data/changelog.json'
 
 const App = (props) => {
     const [refreshTime, setRefreshTime] = useState(moment().format('LTS'))
@@ -71,27 +72,83 @@ const App = (props) => {
 
     const handleCheckUpdate = async (manual = false) => {
         try {
-            // Thêm timestamp để tránh cache
-            const response = await axios.get(`${UPDATE_CHECK_URL}?t=${new Date().getTime()}`)
-            const remoteVersion = response.data.version
+            // Thêm timestamp để tránh cache và đọc trực tiếp file changelog từ GitHub
+            const response = await axios.get(`${REMOTE_CHANGELOG_URL}?t=${new Date().getTime()}`)
+            const remoteChangelog = response.data
+            if (!Array.isArray(remoteChangelog) || remoteChangelog.length === 0) return
+
+            const remoteVersion = remoteChangelog[0].version
+
+            // Nếu chạy tự động và phiên bản này đã bị bỏ qua, không hiện thông báo
+            if (!manual && localStorage.getItem('ignoredUpdateVersion') === remoteVersion) {
+                return
+            }
  
             if (remoteVersion && isNewerVersion(remoteVersion, __APP_VERSION__)) {
+                // Lọc ra các phiên bản mới hơn phiên bản hiện tại để hiển thị thông tin cập nhật
+                const newChanges = []
+                for (const item of remoteChangelog) {
+                    if (isNewerVersion(item.version, __APP_VERSION__)) {
+                        newChanges.push({
+                            version: item.version,
+                            changes: item.changes
+                        })
+                    } else {
+                        break
+                    }
+                }
+
                 const key = `open${Date.now()}`
                 const btn = (
-                    <Button type="primary" size="small" onClick={() => {
-                        notification.destroy(key)
-                        performUpdate()
-                    }} disabled={updating}>
-                        Cập nhật ngay
-                    </Button>
+                    <Space size="small">
+                        <Button type="primary" size="small" onClick={() => {
+                            notification.destroy(key)
+                            performUpdate()
+                        }} disabled={updating}>
+                            Cập nhật ngay
+                        </Button>
+                        <Button size="small" onClick={() => {
+                            localStorage.setItem('ignoredUpdateVersion', remoteVersion)
+                            notification.destroy(key)
+                        }}>
+                            Bỏ qua
+                        </Button>
+                    </Space>
                 )
+
+                const descriptionContent = (
+                    <div style={{ marginTop: '8px' }}>
+                        <div style={{ marginBottom: '8px' }}>
+                            Phiên bản mới (v{remoteVersion}) đã sẵn sàng. Phiên bản bạn đang cài: v{__APP_VERSION__}.
+                        </div>
+                        {newChanges.length > 0 && (
+                            <>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '4px' }}>Thông tin cập nhật:</div>
+                                <div style={{ maxHeight: '180px', overflowY: 'auto', background: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
+                                    {newChanges.map(item => (
+                                        <div key={item.version} style={{ marginBottom: '8px' }}>
+                                            <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#1890ff' }}>v{item.version}:</div>
+                                            <ul style={{ paddingLeft: '16px', listStyleType: 'disc', margin: '4px 0 0 0' }}>
+                                                {item.changes.map((change, idx) => (
+                                                    <li key={idx} style={{ fontSize: '12px', color: '#555' }}>{change}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </div>
+                )
+
                 notification.info({
                     message: 'CÓ BẢN CẬP NHẬT MỚI',
-                    description: `Phiên bản mới (v${remoteVersion}) đã sẵn sàng. Phiên bản bạn đang cài: v${__APP_VERSION__}.`,
+                    description: descriptionContent,
                     placement: 'bottomRight',
                     btn,
                     key,
                     duration: 0,
+                    style: { width: '400px' }
                 })
             } else if (manual) {
                 notification.success({
