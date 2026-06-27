@@ -2,9 +2,17 @@ const core = require('./core')
 const { SellItemOptions, OtherKeys } = require('./const')
 
 const openGame = async (driver, gameOptions = {}, index) => {
-    const { openGame } = gameOptions
+    const { openGame, noRestartIfOpen } = gameOptions
     const needOpen = openGame && index == 0
-    needOpen ? await core.openGame(driver) : await driver.setCurrentWindowSize()
+    if (needOpen) {
+        if (noRestartIfOpen && (await core.haveshoponscreen(driver))) {
+            await driver.setCurrentWindowSize()
+        } else {
+            await core.openGame(driver)
+        }
+    } else {
+        await driver.setCurrentWindowSize()
+    }
     if (index != 0 && !(await core.haveshoponscreen(driver))) {
         await core.openGame(driver)
     }

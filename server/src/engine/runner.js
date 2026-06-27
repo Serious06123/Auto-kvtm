@@ -124,7 +124,8 @@ class Runner {
 
                 try {
                     const tool = this.getAutoTool(params.selectedGame);
-                    if (tool) await tool({ ...params, index: i % 50, loopIndex: i }, entry.driver);
+                    const openGameFrequency = parseInt(params.gameOptions.openGameFrequency, 10) || 50;
+                    if (tool) await tool({ ...params, index: i % openGameFrequency, loopIndex: i }, entry.driver);
                 } catch (err) {
                     logErrMsg(`autoTool error: ${err}`);
                 }

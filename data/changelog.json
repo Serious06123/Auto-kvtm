@@ -1,5 +1,13 @@
 [
   {
+    "version": "3.0.10",
+    "date": "2026-06-27",
+    "changes": [
+      "Thêm tính năng KHÔNG khởi động lại nếu game đã mở sẵn",
+      "Người dùng có thể tùy chỉnh số lần KHỞI ĐỘNG LẠI game theo ý họ muốn"
+    ]
+  },
+  {
     "version": "3.0.9",
     "date": "2026-06-25",
     "changes": [
