@@ -1,5 +1,12 @@
 [
   {
+    "version": "3.0.11",
+    "date": "2026-06-27",
+    "changes": [
+      "fix gấp logic khởi động lại game"
+    ]
+  },
+  {
     "version": "3.0.10",
     "date": "2026-06-27",
     "changes": [
