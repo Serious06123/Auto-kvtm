@@ -30,6 +30,7 @@ const SkyGarden = (props) => {
   const [khoFrequency, setKhoFrequency] = useState(1) // <- Thêm biến cài đặt tần suất quét kho
   const [openGameFrequency, setOpenGameFrequency] = useState(50)
   const [noRestartIfOpen, setNoRestartIfOpen] = useState(true)
+  const [noRestartPeriodic, setNoRestartPeriodic] = useState(false)
   const [gameOption, setGameOption] = useState(['sellItems', 'openChests', 'openGame'])
   const [autoOption, setAutoOption] = useState([])
   const [createOpen, setCreateOpen] = useState(false)
@@ -186,6 +187,7 @@ const SkyGarden = (props) => {
       khoFrequency: khoFrequency || 1, // Kẹp tần suất kho gửi xuống backend
       openGameFrequency: openGameFrequency || 50,
       noRestartIfOpen: noRestartIfOpen,
+      noRestartPeriodic: noRestartPeriodic,
     }
     props.runAuto(data)
   }
@@ -296,24 +298,30 @@ const SkyGarden = (props) => {
                   <span style={{ marginLeft: 8, fontSize: 13 }}>lần lặp.</span>
                 </div>
               </Col>
-              {gameOption.includes('openGame') && (
-                <>
-                  <Col span={24} style={{ marginTop: 8 }}>
-                    <Checkbox checked={noRestartIfOpen} onChange={e => setNoRestartIfOpen(e.target.checked)}>
-                      Không tắt/khởi động lại nếu game đã mở sẵn
-                    </Checkbox>
-                  </Col>
-                  <Col span={24}>
-                    <div style={{ display: 'flex', alignItems: 'center', marginTop: 4 }}>
-                      <span style={{ marginRight: 8, fontSize: 13 }}>Tự động kiểm tra/mở lại game sau mỗi: </span>
-                      <InputNumber min={1} max={9999} value={openGameFrequency} onChange={setOpenGameFrequency} />
-                      <span style={{ marginLeft: 8, fontSize: 13 }}>lần lặp.</span>
-                    </div>
-                  </Col>
-                </>
-              )}
             </Row>
           </Checkbox.Group>
+
+          {gameOption.includes('openGame') && (
+            <Row gutter={[8, 8]} style={{ marginTop: 12 }}>
+              <Col span={24}>
+                <Checkbox checked={noRestartIfOpen} onChange={e => setNoRestartIfOpen(e.target.checked)}>
+                  Không khởi động lại nếu game đã mở sẵn khi bắt đầu chạy
+                </Checkbox>
+              </Col>
+              <Col span={24}>
+                <Checkbox checked={noRestartPeriodic} onChange={e => setNoRestartPeriodic(e.target.checked)}>
+                  Không khởi động lại ở chu kỳ định kỳ (nếu game vẫn đang hoạt động)
+                </Checkbox>
+              </Col>
+              <Col span={24}>
+                <div style={{ display: 'flex', alignItems: 'center', marginTop: 4 }}>
+                  <span style={{ marginRight: 8, fontSize: 13 }}>Tự động kiểm tra/mở lại game sau mỗi: </span>
+                  <InputNumber min={1} max={9999} value={openGameFrequency} onChange={setOpenGameFrequency} />
+                  <span style={{ marginLeft: 8, fontSize: 13 }}>lần lặp.</span>
+                </div>
+              </Col>
+            </Row>
+          )}
 
           <div style={{ marginTop: 32 }}>
             <Button type="primary" block size="large" icon={<PlayCircleOutlined />} onClick={runAuto} disabled={!selectedAuto} style={{ height: 48, fontSize: 16, marginBottom: 16 }}>

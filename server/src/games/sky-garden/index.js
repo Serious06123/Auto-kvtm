@@ -1,11 +1,22 @@
 const core = require('./core')
 const { SellItemOptions, OtherKeys } = require('./const')
 
-const openGame = async (driver, gameOptions = {}, index) => {
-    const { openGame, noRestartIfOpen } = gameOptions
+const openGame = async (driver, gameOptions = {}, index, loopIndex = 0) => {
+    const { openGame, noRestartIfOpen, noRestartPeriodic } = gameOptions
     const needOpen = openGame && index == 0
     if (needOpen) {
-        if (noRestartIfOpen && (await core.haveshoponscreen(driver))) {
+        let skipRestart = false
+        if (loopIndex === 0) {
+            if (noRestartIfOpen && (await core.haveshoponscreen(driver))) {
+                skipRestart = true
+            }
+        } else {
+            if (noRestartPeriodic && (await core.haveshoponscreen(driver))) {
+                skipRestart = true
+            }
+        }
+
+        if (skipRestart) {
             await driver.setCurrentWindowSize()
         } else {
             await core.openGame(driver)
@@ -106,7 +117,7 @@ module.exports = async (data, driver) => {
     const { gameOptions, index, loopIndex = 0 } = data
     const { runAuto } = gameOptions
 
-    await openGame(driver, gameOptions, index)
+    await openGame(driver, gameOptions, index, loopIndex)
     await openChests(driver, gameOptions)
     await autoNangKho(driver, gameOptions, loopIndex)
     var auto = getAuto(runAuto)
