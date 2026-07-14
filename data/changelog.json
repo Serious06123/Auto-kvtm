@@ -1,9 +1,16 @@
 [
   {
-    "version": "3.1.2",
+    "version": "3.1.3",
     "date": "2026-07-14",
     "changes": [
       "update tham số nghỉ của vòng quay hề"
+    ]
+  },
+  {
+    "version": "3.1.2",
+    "date": "2026-07-14",
+    "changes": [
+      "fix gấp logic quay vòng quay hề"
     ]
   },
   {
