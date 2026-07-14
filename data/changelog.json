@@ -1,5 +1,12 @@
 [
   {
+    "version": "3.1.2",
+    "date": "2026-07-14",
+    "changes": [
+      "fix gấp logic quay vòng quay hề"
+    ]
+  },
+  {
     "version": "3.1.1",
     "date": "2026-07-14",
     "changes": [
