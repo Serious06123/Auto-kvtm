@@ -1618,7 +1618,7 @@ const vongQuayHeFree = async (driver, skipPrepare = false) => {
         if (btnQuay) {
             console.log(`[Vòng quay hề] Tiến hành tap nút quay tại (${btnQuay.x}, ${btnQuay.y})...`)
             await driver.tap(btnQuay.x, btnQuay.y)
-            await driver.sleep(8)
+            await driver.sleep(9)
             await driver.tap(btnQuay.x, btnQuay.y)
         } else {
             console.log(`[Vòng quay hề] Không thấy nút quay (vong-quay-he-quay).`)
