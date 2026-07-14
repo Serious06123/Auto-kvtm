@@ -74,7 +74,7 @@ getCropInfo = (findPosition, isRotated) => {
             result = { x: 675, y: 858, w: 115, h: 125 }
             break
         case 'chuhequay':
-            result = { x: 463, y: 486, w: 73, h: 49 }
+            result = { x: 453, y: 471, w: 97, h: 68 }
             break
         default:
             return null

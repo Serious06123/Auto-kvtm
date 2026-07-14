@@ -1483,9 +1483,11 @@ const giaoHangCu = async (driver, gameOptions = {}, loopIndex = 0, skipPrepare =
         let limitCount = 0
         while (limitCount++ < 20) {
             const tichXanh = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcTichXanh), 'giaohangcu')
+            let tichxanhcount = 0
             if (!tichXanh) {
                 console.log(`[Giao hàng cú] Không tìm thấy đơn thường tích xanh (ghc-tich-xanh).`)
                 await driver.sleep(0.1)
+                if (tichxanhcount++ > 5) break
                 continue
             }
 
@@ -1608,15 +1610,15 @@ const vongQuayHeFree = async (driver, skipPrepare = false) => {
 
     const iconFree = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.vongQuayHeFree), 'chuhefree')
     if (iconFree) {
-        console.log(`[Vòng quay hề] Phát hiện nút quay free tại (${iconFree.x}, ${iconFree.y}). Tiến hành tap...`)
-        await driver.tap(iconFree.x, iconFree.y)
+        console.log(`[Vòng quay hề] Phát hiện nút quay free tại (${iconFree.x}, ${iconFree.y + 5}). Tiến hành tap...`)
+        await driver.tap(iconFree.x, iconFree.y + 5)
         await driver.sleep(1.5)
 
         const btnQuay = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.vongQuayHeQuay), 'chuhequay')
         if (btnQuay) {
             console.log(`[Vòng quay hề] Tiến hành tap nút quay tại (${btnQuay.x}, ${btnQuay.y})...`)
             await driver.tap(btnQuay.x, btnQuay.y)
-            await driver.sleep(1.0)
+            await driver.sleep(8)
         } else {
             console.log(`[Vòng quay hề] Không thấy nút quay (vong-quay-he-quay).`)
         }
