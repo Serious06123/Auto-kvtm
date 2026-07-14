@@ -64,6 +64,18 @@ getCropInfo = (findPosition, isRotated) => {
         case 'readkho':
             result = { x: 17, y: 405, w: 225, h: 25 }
             break
+        case 'giaohangcu':
+            result = { x: 492, y: 312, w: 345, h: 359 }
+            break
+        case 'kimcuongcu':
+            result = { x: 149, y: 646, w: 217, h: 75 }
+            break
+        case 'chuhefree':
+            result = { x: 675, y: 858, w: 115, h: 125 }
+            break
+        case 'chuhequay':
+            result = { x: 463, y: 486, w: 73, h: 49 }
+            break
         default:
             return null
     }

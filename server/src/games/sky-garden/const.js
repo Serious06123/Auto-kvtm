@@ -150,6 +150,16 @@ const ItemKeys = {
     xoavp: 'xoa-vp',
     dongy2: 'dong-y-2',
     xanhbatbo: 'vot-xanh',
+    ghcGiaoHang: 'ghc-giao-hang',
+    ghcDonThuong: 'ghc-don-thuong',
+    ghcHuy: 'ghc-huy',
+    ghcKimCuong: 'ghc-kimcuong',
+    ghcTichXanhTim: 'ghc-tich-xanh-tim',
+    ghcTichXanh: 'ghc-tich-xanh',
+    ghcDangCho: 'ghc-dang-cho',
+    ghcBan: 'ghc-ban',
+    vongQuayHeFree: 'vong-quay-he-free',
+    vongQuayHeQuay: 'vong-quay-he-quay',
 }
 
 const TreeKeys = {

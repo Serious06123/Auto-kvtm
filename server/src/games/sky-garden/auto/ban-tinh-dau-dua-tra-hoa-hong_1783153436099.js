@@ -9,7 +9,7 @@ const produceItems = async (driver, isLast, mutex) => {
 
 const sellItems = async (driver, mutex, mutex2, removeItems = false, quantity = 0) => {
   // Sell Goods
-  await core.sellItems(driver, SellItemOptions.goods, [{ key: ProductKeys.tinhDauDua, value: 2 }, { key: ProductKeys.traHoaHong, value: 3 }], mutex, mutex2, removeItems, true, false)
+  await core.sellItems(driver, SellItemOptions.goods, [{ key: ProductKeys.tinhDauDua, value: 20 }, { key: ProductKeys.traHoaHong, value: 20 }], mutex, mutex2, removeItems, true)
 }
 
 // auto generated
@@ -19,9 +19,9 @@ module.exports = async (driver, gameOptions) => {
   const { quantity } = gameOptions;
   let mutex = { value: 0 };
   let mutex2 = { value: 0 };
-  for (let i = 0; i < 1; i++) {
+  for (let i = 0; i < 5; i++) {
     if (mutex.value != 1) {
-      await produceItems(driver, i == 0, mutex);
+      await produceItems(driver, i == 4, mutex);
     } 
   }
 

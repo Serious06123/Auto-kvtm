@@ -92,8 +92,10 @@ const openGame = async (driver) => {
     await backToGame(driver)
 }
 
-const openChests = async (driver) => {
-    await goDownLast(driver)
+const openChests = async (driver, skipPrepare = false) => {
+    if (!skipPrepare) {
+        await goDownLast(driver)
+    }
     let isFound = await driver.haveItemOnScreen(_getItemPath(ItemKeys.chest), SlotPositions.moruong)
     if (isFound) {
         await driver.tap(37.0, 62.7)
@@ -655,11 +657,20 @@ const makeItems = async (driver, floor = 1, slot = 0, number = 1, mutex) => {
     await backToGame(driver)
 }
 
+const _getItemOption = (items, itemId, defaultOption) => {
+    if (Array.isArray(items)) {
+        const item = items.find((el) => el.key === itemId)
+        return item && item.option ? item.option : defaultOption
+    }
+    return defaultOption
+}
+
 const _sellSelectedItem = async (driver, option, items, itemId, isAds, mutex2) => {
     while (itemId) {
         if (await driver.tapItemOnScreen(_getItemPath(itemId), SlotPositions.bando)) {
             await _sell(driver, isAds)
-            if (option == SellItemOptions.other) {
+            const currentOption = _getItemOption(items, itemId, option)
+            if (currentOption == SellItemOptions.other) {
                 await driver.sleep(0.3)
                 await driver.tap(49.7, 60.4)
             }
@@ -676,16 +687,18 @@ const _sellSelectedItem = async (driver, option, items, itemId, isAds, mutex2) =
     return null
 }
 
-const sellItems = async (driver, option, items, mutex, mutex2, removeItems = false, isAds = true, loop = true) => {
+const sellItems = async (driver, option, items, mutex, mutex2, removeItems = false, isAds = true, loop = true, skipPrepare = false) => {
     if (mutex2.value >= items.value) {
         loop = true
         mutex.value = 0
         return
     }
     const { x: option_x, y: option_y } = SellOptions[option]
-    await backToGame(driver)
-    await goDownLast(driver)
-    await driver.sleep(0.2)
+    if (!skipPrepare) {
+        await backToGame(driver)
+        await goDownLast(driver)
+        await driver.sleep(0.2)
+    }
     // open
     await driver.tap(64.3, 85.5)
     await driver.sleep(1)
@@ -703,6 +716,7 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
     let itemId = _getItemId(items)
     let count = 0,
         cnt = mutex2.value
+    let activeOption = null
     while (itemId) {
         if (mutex2.value >= items.value - 1) {
             loop = true
@@ -715,8 +729,13 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
             await driver.sleep(0.1)
             await driver.tap(soldSlot.x, soldSlot.y)
             await driver.sleep(0.5)
-            await driver.tap(option_x, option_y)
-            await driver.sleep(0.5)
+            const currentOption = _getItemOption(items, itemId, option)
+            if (activeOption !== currentOption) {
+                const { x: opt_x, y: opt_y } = SellOptions[currentOption]
+                await driver.tap(opt_x, opt_y)
+                await driver.sleep(0.5)
+                activeOption = currentOption
+            }
             itemId = await _sellSelectedItem(driver, option, items, itemId, isAds, mutex2)
             if (!itemId) break
             continue
@@ -726,8 +745,13 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
         if (emptySlot != null) {
             await driver.tap(emptySlot.x, emptySlot.y)
             await driver.sleep(0.6)
-            await driver.tap(option_x, option_y)
-            await driver.sleep(0.5)
+            const currentOption = _getItemOption(items, itemId, option)
+            if (activeOption !== currentOption) {
+                const { x: opt_x, y: opt_y } = SellOptions[currentOption]
+                await driver.tap(opt_x, opt_y)
+                await driver.sleep(0.5)
+                activeOption = currentOption
+            }
             itemId = await _sellSelectedItem(driver, option, items, itemId, isAds, mutex2)
             if (!itemId) break
             continue
@@ -772,8 +796,13 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
                             await driver.sleep(0.1)
                             await driver.tap(soldSlot.x, soldSlot.y)
                             await driver.sleep(0.5)
-                            await driver.tap(option_x, option_y)
-                            await driver.sleep(0.5)
+                            const currentOption = _getItemOption(items, itemId, option)
+                            if (activeOption !== currentOption) {
+                                const { x: opt_x, y: opt_y } = SellOptions[currentOption]
+                                await driver.tap(opt_x, opt_y)
+                                await driver.sleep(0.5)
+                                activeOption = currentOption
+                            }
                             itemId = await _sellSelectedItem(driver, option, items, itemId, isAds, mutex2)
                             if (!itemId) break
                             continue
@@ -783,8 +812,13 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
                         if (emptySlot != null) {
                             await driver.tap(emptySlot.x, emptySlot.y)
                             await driver.sleep(0.6)
-                            await driver.tap(option_x, option_y)
-                            await driver.sleep(0.5)
+                            const currentOption = _getItemOption(items, itemId, option)
+                            if (activeOption !== currentOption) {
+                                const { x: opt_x, y: opt_y } = SellOptions[currentOption]
+                                await driver.tap(opt_x, opt_y)
+                                await driver.sleep(0.5)
+                                activeOption = currentOption
+                            }
                             itemId = await _sellSelectedItem(driver, option, items, itemId, isAds, mutex2)
                             if (!itemId) break
                             continue
@@ -816,7 +850,7 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
                 continue
             }
             if (mutex.value == 1) {
-                return await sellItems(driver, option, items, mutex, mutex2, removeItems, isAds, loop)
+                return await sellItems(driver, option, items, mutex, mutex2, removeItems, isAds, loop, skipPrepare)
             }
             break
         }
@@ -1081,19 +1115,24 @@ const shutdownPythonServer = async () => {
     })
 }
 
-const readNumbersAndSave = async (driver, type) => {
+const readNumbersAndSave = async (driver, type, skipPrepare = false, keepOpen = false, panelAlreadyOpen = false) => {
     try {
-        await goDownLast(driver)
-        await driver.sleep(0.2)
-        await driver.tap(80, 84.4)
-        await driver.sleep(0.3)
+        if (!skipPrepare && !panelAlreadyOpen) {
+            await backToGame(driver)
+            await goDownLast(driver)
+            await driver.sleep(0.5)
+        }
+        if (!panelAlreadyOpen) {
+            await driver.tap(80, 84.4)
+            await driver.sleep(0.5)
+        }
         if (type == 1) {
             await driver.tap(44.8, 37.3)
-            await driver.sleep(0.3)
+            await driver.sleep(1)
         }
         if (type == 2) {
             await driver.tap(44.8, 44.3)
-            await driver.sleep(0.3)
+            await driver.sleep(1)
         }
         const screenshotDataRaw = await driver.screenshot()
         // Đảm bảo ép chuẩn Base64 String
@@ -1290,12 +1329,300 @@ const readNumbersAndSave = async (driver, type) => {
         const fileName = resolve(dir, `kho_${type}_data_${driver.deviceId || 'unknown'}.txt`)
         fs.writeFileSync(fileName, parsedNumbers, 'utf8')
 
-        await backToGame(driver)
+        if (!keepOpen) {
+            await backToGame(driver)
+        }
 
         return parsedNumbers
     } catch (err) {
         console.error(`Error in readNumbersAndSave for type ${type}:`, err)
         return '0'
+    }
+}
+
+const giaoHangCu = async (driver, gameOptions = {}, loopIndex = 0, skipPrepare = false) => {
+    const {
+        giaoHangCu,
+        giaoHangCuFrequency = 1,
+        giaoHangCuDailyFree = false,
+        giaoHangCuDailyGem = false,
+        giaoHangCuRegular = false,
+        giaoHangCuDeleteInvalid = false,
+        giaoHangCuReactivateGem = false,
+    } = gameOptions
+
+    if (!giaoHangCu) return
+
+    // Vòng loopIndex = 0 luôn chạy. Các vòng tiếp theo chạy nếu loopIndex chia hết cho giaoHangCuFrequency.
+    if (loopIndex % giaoHangCuFrequency !== 0) return
+
+    console.log(`[Giao hàng cú] Bắt đầu chạy ở chu kỳ ${loopIndex}...`)
+
+    if (!skipPrepare) {
+        await backToGame(driver)
+        await goDownLast(driver)
+        await driver.sleep(1)
+    }
+
+    console.log(`[Giao hàng cú] Mở giao diện giao hàng cú tại tọa độ (95.5, 4.6)...`)
+    await driver.tap(95.5, 4.6)
+    await driver.sleep(1.5)
+
+    // 1. Trường hợp người dùng chọn đơn hàng hằng ngày (Free/Kim cương)
+    // 1. Trường hợp người dùng chọn đơn hàng hằng ngày FREE
+    if (giaoHangCuDailyFree) {
+        console.log(`[Giao hàng cú] Đang xử lý đơn hàng hằng ngày FREE...`)
+        let limitCount = 0
+        while (limitCount++ < 6) {
+            let tichXanhTim = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcTichXanhTim), 'giaohangcu')
+            if (!tichXanhTim) {
+                console.log(`[Giao hàng cú] Đang tìm lại tích xanh tím (FREE)`)
+                await driver.sleep(0.1)
+                continue
+            } else {
+                console.log(`[Giao hàng cú] Đã tìm thấy tích xanh tím (FREE). Tiến hành tap...`)
+                await driver.tap(tichXanhTim.x, tichXanhTim.y)
+                await driver.sleep(0.8)
+            }
+
+            let btnGiao = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcGiaoHang), 'kimcuongcu')
+            if (!btnGiao) {
+                let btnBan = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcBan), 'kimcuongcu')
+                if (btnBan) {
+                    console.log(`[Giao hàng cú] Chưa có nút Giao, nhấn nút Bán tại (${btnBan.x}, ${btnBan.y})...`)
+                    await driver.tap(btnBan.x, btnBan.y)
+                    await driver.sleep(0.5)
+
+                    let loopghc = false
+                    let retryCount = 0
+                    let delivered = false
+                    while (!loopghc && retryCount++ < 20) {
+                        let giaoHang = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcGiaoHang), 'kimcuongcu')
+                        if (giaoHang) {
+                            loopghc = true
+                            delivered = true
+                            console.log(`[Giao hàng cú] Phát hiện nút Giao, tiến hành tap tại (${giaoHang.x}, ${giaoHang.y})...`)
+                            await driver.tap(giaoHang.x, giaoHang.y)
+                            await driver.sleep(1)
+                        } else {
+                            await driver.sleep(0.5)
+                        }
+                    }
+                    if (delivered) continue
+                }
+                console.log(`[Giao hàng cú] Không tìm thấy nút Giao hoặc nút Bán. Dừng đơn hằng ngày FREE.`)
+                break
+            } else {
+                await driver.tap(btnGiao.x, btnGiao.y)
+                await driver.sleep(1)
+                console.log(`[Giao hàng cú] Đã tap giao hàng hằng ngày FREE, nghỉ 1 giây...`)
+            }
+        }
+    }
+
+    // 1b. Trường hợp người dùng chọn đơn hàng hằng ngày bằng KIM CƯƠNG
+    if (giaoHangCuDailyGem) {
+        console.log(`[Giao hàng cú] Đang xử lý đơn hàng hằng ngày bằng KIM CƯƠNG...`)
+        let limitCount = 0
+        while (limitCount++ < 18) {
+            let tichXanhTim = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcTichXanhTim), 'giaohangcu')
+            if (!tichXanhTim) {
+                console.log(`[Giao hàng cú] Đang tìm lại tích xanh tím (GEM)`)
+                await driver.sleep(0.1)
+                continue
+            } else {
+                console.log(`[Giao hàng cú] Đã tìm thấy tích xanh tím (GEM). Tiến hành tap...`)
+                await driver.tap(tichXanhTim.x, tichXanhTim.y)
+                await driver.sleep(0.8)
+            }
+            let isGem = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcKimCuong), 'kimcuongcu')
+            if (isGem) {
+                console.log(`[Giao hàng cú] Xài Kim cương`)
+                await driver.tap(isGem.x, isGem.y)
+                await driver.sleep(0.2)
+            }
+            let btnGiao = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcGiaoHang), 'kimcuongcu')
+            if (!btnGiao) {
+                let btnBan = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcBan), 'kimcuongcu')
+                if (btnBan) {
+                    console.log(`[Giao hàng cú] Chưa có nút Giao, nhấn nút Bán tại (${btnBan.x}, ${btnBan.y})...`)
+                    await driver.tap(btnBan.x, btnBan.y)
+                    await driver.sleep(0.5)
+
+                    let loopghc = false
+                    let retryCount = 0
+                    let delivered = false
+                    while (!loopghc && retryCount++ < 20) {
+                        let giaoHang = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcGiaoHang), 'kimcuongcu')
+                        if (giaoHang) {
+                            loopghc = true
+                            delivered = true
+                            console.log(`[Giao hàng cú] Phát hiện nút Giao, tiến hành tap tại (${giaoHang.x}, ${giaoHang.y})...`)
+                            await driver.tap(giaoHang.x, giaoHang.y)
+                            await driver.sleep(0.5)
+                        } else {
+                            await driver.sleep(0.5)
+                        }
+                    }
+                    if (delivered) continue
+                }
+                console.log(`[Giao hàng cú] Không tìm thấy nút Giao hoặc nút Bán. Dừng đơn hằng ngày bằng GEM.`)
+                break
+            } else {
+                console.log(`[Giao hàng cú] Phát hiện nút Giao, tiến hành tap tại (${btnGiao.x}, ${btnGiao.y})...`)
+                await driver.tap(btnGiao.x, btnGiao.y)
+                await driver.sleep(0.5)
+                console.log(`[Giao hàng cú] Đã tap giao hàng hằng ngày bằng GEM, nghỉ 1 giây...`)
+            }
+        }
+    }
+
+    // 2. Trường hợp người dùng chọn đơn hàng thường
+    if (giaoHangCuRegular) {
+        console.log(`[Giao hàng cú] Đang xử lý đơn hàng thường...`)
+        let limitCount = 0
+        while (limitCount++ < 20) {
+            const tichXanh = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcTichXanh), 'giaohangcu')
+            if (!tichXanh) {
+                console.log(`[Giao hàng cú] Không tìm thấy đơn thường tích xanh (ghc-tich-xanh).`)
+                await driver.sleep(0.1)
+                continue
+            }
+
+            console.log(`[Giao hàng cú] Phát hiện tích xanh tại (${tichXanh.x}, ${tichXanh.y}). Tiến hành tap...`)
+            for (let i = 0; i < 3; i++) {
+                await driver.tap(tichXanh.x, tichXanh.y)
+                await driver.sleep(0.1)
+            }
+
+            let btnGiao = null
+            for (let retry = 0; retry < 5; retry++) {
+                btnGiao = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcGiaoHang), 'kimcuongcu')
+                if (!btnGiao) {
+                    let btnBan = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcBan), 'kimcuongcu')
+                    if (btnBan) {
+                        let loopghc = false
+                        let retryCount = 0
+                        while (!loopghc && retryCount++ < 20) {
+                            let giaoHang = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcGiaoHang), 'kimcuongcu')
+                            if (giaoHang) {
+                                loopghc = true
+                                await driver.sleep(0.25)
+                            } else {
+                                await driver.sleep(0.5)
+                            }
+                        }
+                    } else break
+                } else break
+                await driver.sleep(0.2)
+            }
+
+            if (btnGiao) {
+                console.log(`[Giao hàng cú] Tiến hành giao đơn hàng tại (${btnGiao.x}, ${btnGiao.y})...`)
+                await driver.tap(btnGiao.x, btnGiao.y)
+                await driver.sleep(1)
+            } else {
+                console.log(`[Giao hàng cú] Lỗi: Không tìm thấy nút giao hàng cho đơn thường sau 5 lần thử. Bỏ qua đơn này.`)
+                await driver.sleep(0.5)
+            }
+        }
+    }
+
+    // 3. Trường hợp người dùng chọn xóa đơn hàng thường không hợp lệ
+    if (giaoHangCuDeleteInvalid) {
+        console.log(`[Giao hàng cú] Đang xử lý hủy đơn hàng thường không hợp lệ...`)
+        let limitCount = 0
+        while (limitCount++ < 8) {
+            const donThuong = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcDonThuong), 'giaohangcu')
+            if (!donThuong) {
+                console.log(`[Giao hàng cú] Không tìm thấy đơn thường không hợp lệ (ghc-don-thuong).`)
+                await driver.sleep(0.1)
+                continue
+            }
+
+            console.log(`[Giao hàng cú] Phát hiện đơn thường tại (${donThuong.x}, ${donThuong.y}). Tiến hành tap...`)
+            for (let i = 0; i < 3; i++) {
+                await driver.tap(donThuong.x, donThuong.y)
+                await driver.sleep(0.1)
+            }
+            let btnHuy = null
+            for (let retry = 0; retry < 5; retry++) {
+                btnHuy = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcHuy), 'kimcuongcu')
+                if (btnHuy) {
+                    console.log(`[Giao hàng cú] Tiến hành hủy đơn hàng tại (${btnHuy.x}, ${btnHuy.y})...`)
+                    await driver.tap(btnHuy.x, btnHuy.y)
+                    await driver.sleep(0.8)
+                    break
+                } else {
+                    console.log(`[Giao hàng cú] Lỗi: Không tìm thấy nút hủy đơn,đang tìm lại.`)
+                    await driver.sleep(0.5)
+                }
+            }
+        }
+    }
+
+    // 4. Trường hợp người dùng chọn dùng kim cương kích hoạt lại đơn hàng thường đang chờ
+    if (giaoHangCuReactivateGem) {
+        console.log(`[Giao hàng cú] Đang xử lý kích hoạt lại đơn hàng thường đang chờ...`)
+        let limitCount = 0
+        while (limitCount++ < 8) {
+            const dangCho = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcDangCho), 'giaohangcu')
+            if (!dangCho) {
+                console.log(`[Giao hàng cú] Không tìm thấy đơn hàng nào đang chờ (ghc-dang-cho).`)
+                break
+            }
+
+            console.log(`[Giao hàng cú] Phát hiện đơn hàng đang chờ tại (${dangCho.x}, ${dangCho.y}). Tiến hành tap...`)
+            for (let i = 0; i < 3; i++) {
+                await driver.tap(dangCho.x, dangCho.y)
+                await driver.sleep(0.1)
+            }
+
+            let btnKimCuong = null
+            for (let retry = 0; retry < 5; retry++) {
+                btnKimCuong = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcKimCuong), 'kimcuongcu')
+                if (btnKimCuong) {
+                    console.log(`[Giao hàng cú] Tiến hành kích hoạt đơn hàng bằng kim cương tại (${btnKimCuong.x}, ${btnKimCuong.y})...`)
+                    await driver.tap(btnKimCuong.x, btnKimCuong.y)
+                    await driver.sleep(0.8)
+                    break
+                } else {
+                    console.log(`[Giao hàng cú] Lỗi: Không tìm thấy nút kim cương để kang ích hoạt,đtìm lại.`)
+                    await driver.sleep(0.5)
+                }
+            }
+        }
+    }
+
+    console.log(`[Giao hàng cú] Hoàn thành, đóng giao diện...`)
+    await backToGame(driver)
+}
+
+const vongQuayHeFree = async (driver, skipPrepare = false) => {
+    console.log(`[Vòng quay hề] Bắt đầu kiểm tra vòng quay chú hề free...`)
+    if (!skipPrepare) {
+        await backToGame(driver)
+        await goDownLast(driver)
+        await driver.sleep(0.5)
+    }
+
+    const iconFree = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.vongQuayHeFree), 'chuhefree')
+    if (iconFree) {
+        console.log(`[Vòng quay hề] Phát hiện nút quay free tại (${iconFree.x}, ${iconFree.y}). Tiến hành tap...`)
+        await driver.tap(iconFree.x, iconFree.y)
+        await driver.sleep(1.5)
+
+        const btnQuay = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.vongQuayHeQuay), 'chuhequay')
+        if (btnQuay) {
+            console.log(`[Vòng quay hề] Tiến hành tap nút quay tại (${btnQuay.x}, ${btnQuay.y})...`)
+            await driver.tap(btnQuay.x, btnQuay.y)
+            await driver.sleep(1.0)
+        } else {
+            console.log(`[Vòng quay hề] Không thấy nút quay (vong-quay-he-quay).`)
+        }
+        await backToGame(driver)
+    } else {
+        console.log(`[Vòng quay hề] Không thấy nút quay miễn phí (vong-quay-he-free).`)
     }
 }
 
@@ -1321,6 +1648,8 @@ module.exports = {
     readNumbersAndSave,
     ensurePythonServer,
     shutdownPythonServer,
+    giaoHangCu,
+    vongQuayHeFree,
 }
 
 // private method

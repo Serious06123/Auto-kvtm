@@ -31,6 +31,12 @@ const SkyGarden = (props) => {
   const [openGameFrequency, setOpenGameFrequency] = useState(50)
   const [noRestartIfOpen, setNoRestartIfOpen] = useState(true)
   const [noRestartPeriodic, setNoRestartPeriodic] = useState(false)
+  const [giaoHangCuFrequency, setGiaoHangCuFrequency] = useState(1)
+  const [giaoHangCuDailyFree, setGiaoHangCuDailyFree] = useState(true)
+  const [giaoHangCuDailyGem, setGiaoHangCuDailyGem] = useState(false)
+  const [giaoHangCuRegular, setGiaoHangCuRegular] = useState(true)
+  const [giaoHangCuDeleteInvalid, setGiaoHangCuDeleteInvalid] = useState(false)
+  const [giaoHangCuReactivateGem, setGiaoHangCuReactivateGem] = useState(false)
   const [gameOption, setGameOption] = useState(['sellItems', 'openChests', 'openGame'])
   const [autoOption, setAutoOption] = useState([])
   const [createOpen, setCreateOpen] = useState(false)
@@ -177,11 +183,19 @@ const SkyGarden = (props) => {
       runAuto: selectedAuto,
       openGame: gameOption.includes('openGame'),
       openChests: gameOption.includes('openChests'),
+      vongQuayHeFree: gameOption.includes('vongQuayHeFree'),
       sellItems: gameOption.includes('sellItems'),
       removeItems: gameOption.includes('removeItems'),
       kho1: gameOption.includes('kho1'),
       kho2: gameOption.includes('kho2'),
       sellOtherKho: gameOption.includes('sellOtherKho'),
+      giaoHangCu: gameOption.includes('giaoHangCu'),
+      giaoHangCuFrequency: giaoHangCuFrequency || 1,
+      giaoHangCuDailyFree: giaoHangCuDailyFree,
+      giaoHangCuDailyGem: giaoHangCuDailyGem,
+      giaoHangCuRegular: giaoHangCuRegular,
+      giaoHangCuDeleteInvalid: giaoHangCuDeleteInvalid,
+      giaoHangCuReactivateGem: giaoHangCuReactivateGem,
       frequency: frequency || 1,
       quantity: quantity || 1,
       khoFrequency: khoFrequency || 1, // Kẹp tần suất kho gửi xuống backend
@@ -253,6 +267,8 @@ const SkyGarden = (props) => {
               <Col span={12}><Checkbox value="openChests">Open Chests</Checkbox></Col>
               <Col span={12}><Checkbox value="sellItems">Sell Items</Checkbox></Col>
               <Col span={12}><Checkbox value="removeItems">Remove Items</Checkbox></Col>
+              <Col span={12}><Checkbox value="giaoHangCu">Giao Hàng Cú</Checkbox></Col>
+              <Col span={12}><Checkbox value="vongQuayHeFree">Vòng Quay Chú Hề FREE</Checkbox></Col>
               <Col span={24}><Divider style={{ margin: '8px 0' }} /></Col>
               <Col span={24}><Checkbox value="kho1" disabled={!aiStatus.installed}>Auto nâng kho 1 (Beta)</Checkbox></Col>
               <Col span={24}><Checkbox value="kho2" disabled={!aiStatus.installed}>Auto nâng kho 2 (Beta)</Checkbox></Col>
@@ -319,6 +335,43 @@ const SkyGarden = (props) => {
                   <InputNumber min={1} max={9999} value={openGameFrequency} onChange={setOpenGameFrequency} />
                   <span style={{ marginLeft: 8, fontSize: 13 }}>lần lặp.</span>
                 </div>
+              </Col>
+            </Row>
+          )}
+
+          {gameOption.includes('giaoHangCu') && (
+            <Row gutter={[8, 8]} style={{ marginTop: 12, paddingLeft: 12, borderLeft: '2px solid #1890ff' }}>
+              <Col span={24}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ marginRight: 8, fontSize: 13 }}>Kiểm tra Giao Hàng Cú sau mỗi: </span>
+                  <InputNumber min={1} max={9999} value={giaoHangCuFrequency} onChange={setGiaoHangCuFrequency} />
+                  <span style={{ marginLeft: 8, fontSize: 13 }}>lần lặp.</span>
+                </div>
+              </Col>
+              <Col span={24}>
+                <Checkbox checked={giaoHangCuDailyFree} onChange={e => setGiaoHangCuDailyFree(e.target.checked)}>
+                  Giao đơn hàng hằng ngày (Free)
+                </Checkbox>
+              </Col>
+              <Col span={24}>
+                <Checkbox checked={giaoHangCuDailyGem} onChange={e => setGiaoHangCuDailyGem(e.target.checked)}>
+                  Giao đơn hàng hằng ngày (Kim cương)
+                </Checkbox>
+              </Col>
+              <Col span={24}>
+                <Checkbox checked={giaoHangCuRegular} onChange={e => setGiaoHangCuRegular(e.target.checked)}>
+                  Giao đơn thường đã đủ điều kiện
+                </Checkbox>
+              </Col>
+              <Col span={24}>
+                <Checkbox checked={giaoHangCuDeleteInvalid} onChange={e => setGiaoHangCuDeleteInvalid(e.target.checked)}>
+                  Hủy đơn thường không đủ điều kiện
+                </Checkbox>
+              </Col>
+              <Col span={24}>
+                <Checkbox checked={giaoHangCuReactivateGem} onChange={e => setGiaoHangCuReactivateGem(e.target.checked)}>
+                  Dùng kim cương kích hoạt lại đơn hàng thường đang chờ
+                </Checkbox>
               </Col>
             </Row>
           )}

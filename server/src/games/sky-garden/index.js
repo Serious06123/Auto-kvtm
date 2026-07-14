@@ -49,7 +49,7 @@ const getAuto = (autoKey) => {
     }
 }
 
-const autoNangKho = async (driver, gameOptions = {}, loopIndex = 0) => {
+const autoNangKho = async (driver, gameOptions = {}, loopIndex = 0, skipPrepare = false) => {
     const { kho1, kho2, khoFrequency = 1, sellOtherKho } = gameOptions;
 
     // Check chẵn chu kỳ nhảy. Vòng index = 0 luôn luôn chạy. 
@@ -60,7 +60,9 @@ const autoNangKho = async (driver, gameOptions = {}, loopIndex = 0) => {
 
     if (kho1) {
         // Lấy tự động mảng OCR trả về
-        const kho1String = await core.readNumbersAndSave(driver, '1')
+        // Nếu có cả kho2, giữ lại bảng mở (keepOpen = true)
+        const keepOpen = !!kho2;
+        const kho1String = await core.readNumbersAndSave(driver, '1', skipPrepare, keepOpen, false)
         const arr = kho1String.split(' ').map(Number)
 
         // Cấu trúc chuẩn 6 số: Gạch(0,1), Sơn Đỏ(2,3), Gỗ(4,5)
@@ -83,7 +85,9 @@ const autoNangKho = async (driver, gameOptions = {}, loopIndex = 0) => {
     }
     if (kho2) {
         // Lấy tự động mảng OCR trả về
-        const kho2String = await core.readNumbersAndSave(driver, '2')
+        // Nếu kho1 đã chạy trước đó, bảng đã được mở sẵn (panelAlreadyOpen = true)
+        const panelAlreadyOpen = !!kho1;
+        const kho2String = await core.readNumbersAndSave(driver, '2', skipPrepare, false, panelAlreadyOpen)
         const arr = kho2String.split(' ').map(Number)
 
         // Cấu trúc chuẩn 6 số: Đá(0,1), Sơn Vàng(2,3), Đinh(4,5)
@@ -109,7 +113,8 @@ const autoNangKho = async (driver, gameOptions = {}, loopIndex = 0) => {
         let mutex = { value: 0 };
         let mutex2 = { value: 0 };
         // Phân loại gian hàng: Other (Dành cho đồ Nâng Cấp Kho)
-        await core.sellItems(driver, SellItemOptions.other, sellList, mutex, mutex2, false, true, true);
+        // Luôn truyền skipPrepare = true vì sau khi đọc kho xong màn hình đã ở tầng trệt và đã đóng bảng
+        await core.sellItems(driver, SellItemOptions.other, sellList, mutex, mutex2, false, true, true, true);
     }
 }
 
@@ -117,9 +122,37 @@ module.exports = async (data, driver) => {
     const { gameOptions, index, loopIndex = 0 } = data
     const { runAuto } = gameOptions
 
+    // 1. Khởi động/mở game về màn hình chính
     await openGame(driver, gameOptions, index, loopIndex)
-    await openChests(driver, gameOptions)
-    await autoNangKho(driver, gameOptions, loopIndex)
+
+    let groundFloorPrepared = false;
+
+    // 2. Giao hàng cú (Owl Delivery)
+    const runGiaoHang = gameOptions.giaoHangCu && (loopIndex % (gameOptions.giaoHangCuFrequency || 1) === 0);
+    if (runGiaoHang) {
+        await core.giaoHangCu(driver, gameOptions, loopIndex, groundFloorPrepared)
+        groundFloorPrepared = true;
+    }
+
+    // 3. Các tác vụ tầng trệt (Mở rương, Vòng quay hề, Nâng kho)
+    const runChests = gameOptions.openChests;
+    if (runChests) {
+        await core.openChests(driver, groundFloorPrepared)
+        groundFloorPrepared = true;
+    }
+
+    const runClown = gameOptions.vongQuayHeFree && index === 0;
+    if (runClown) {
+        await core.vongQuayHeFree(driver, groundFloorPrepared)
+        groundFloorPrepared = true;
+    }
+
+    const runNangKho = (gameOptions.kho1 || gameOptions.kho2) && (loopIndex % (gameOptions.khoFrequency || 1) === 0);
+    if (runNangKho) {
+        await autoNangKho(driver, gameOptions, loopIndex, groundFloorPrepared)
+        groundFloorPrepared = true;
+    }
+
     var auto = getAuto(runAuto)
     auto && (await auto(driver, gameOptions))
     await makeEvent(driver, index)
