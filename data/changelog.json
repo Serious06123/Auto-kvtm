@@ -1,5 +1,12 @@
 [
   {
+    "version": "3.1.4",
+    "date": "2026-08-01",
+    "changes": [
+      "Fix lỗi cú pháp cho window,ai chạy bình thường trước đó thì không cần update"
+    ]
+  },
+  {
     "version": "3.1.3",
     "date": "2026-07-14",
     "changes": [
