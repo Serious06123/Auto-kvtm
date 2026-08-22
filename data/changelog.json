@@ -1,86 +1,69 @@
 [
-  {
-    "version": "3.1.4",
-    "date": "2026-08-01",
-    "changes": [
-      "Fix lỗi cú pháp cho window,ai chạy bình thường trước đó thì không cần update"
-    ]
-  },
-  {
-    "version": "3.1.3",
-    "date": "2026-07-14",
-    "changes": [
-      "update tham số nghỉ của vòng quay hề"
-    ]
-  },
-  {
-    "version": "3.1.2",
-    "date": "2026-07-14",
-    "changes": [
-      "fix gấp logic quay vòng quay hề"
-    ]
-  },
-  {
-    "version": "3.1.1",
-    "date": "2026-07-14",
-    "changes": [
-      "fix gấp logic quay vòng quay hề",
-      " Chỉnh sửa lại tham số tìm tích xanh còn 5 lần"
-    ]
-  },
-  {
-    "version": "3.1.0",
-    "date": "2026-07-14",
-    "changes": [
-      "Thêm tính năng giao đơn hàng cú",
-      "Thêm tính năng quay vòng quay hề free",
-      "Giảm bớt các động tác thừa"
-    ]
-  },
-  {
-    "version": "3.0.11",
-    "date": "2026-06-27",
-    "changes": [
-      "fix gấp logic khởi động lại game"
-    ]
-  },
-  {
-    "version": "3.0.10",
-    "date": "2026-06-27",
-    "changes": [
-      "Thêm tính năng KHÔNG khởi động lại nếu game đã mở sẵn",
-      "Người dùng có thể tùy chỉnh số lần KHỞI ĐỘNG LẠI game theo ý họ muốn"
-    ]
-  },
-  {
-    "version": "3.0.9",
-    "date": "2026-06-25",
-    "changes": [
-      "Thêm tính năng xem thông tin cập nhật khi có phiên bản mới , có thể ấn bỏ qua nếu không muốn cập nhật"
-    ]
-  },
-  {
-    "version": "3.0.8",
-    "date": "2026-06-25",
-    "changes": [
-      "Thêm chức năng xem lịch sử cập nhật"
-    ]
-  },
-  {
-    "version": "3.0.7",
-    "date": "2026-06-25",
-    "changes": [
-      "Đã hỗ trợ hiển thị đầy đủ cài đặt Quảng Cáo, Thêm Món, và Bán đủ số lượng cho vật phẩm Sự Kiện (Events).",
-      "Tự động chuyển đổi số lượng bán của Events thành biến quantity động.",
-      "Tự động phát hiện và chuyển đổi cổng kết nối ADB (5037 -> 5045) tránh xung đột giữa các giả lập hoặc tool khác."
-    ]
-  },
-  {
-    "version": "3.0.6",
-    "date": "2026-06-10",
-    "changes": [
-      "Tối ưu hóa thuật toán nhận diện ảnh bọ trên tầng.",
-      "Nâng cấp tốc độ phản hồi kéo màn hình."
-    ]
-  }
+    {
+        "version": "3.1.5",
+        "date": "2026-08-23",
+        "changes": [
+            "LƯU Ý TRƯỚC KHI BẤM UPDATE : Nên copy mấy cái file auto mà bạn chỉnh sửa trong các auto mẫu của mình ra thành 1 auto mới để không bị reset lại logic ban đầu khi update",
+            "Bỏ các động tác thừa về ấn quảng cáo khi bán hàng , update ảnh chưa quảng cáo chuẩn hơn "
+        ]
+    },
+    {
+        "version": "3.1.4",
+        "date": "2026-08-01",
+        "changes": ["Fix lỗi cú pháp cho window,ai chạy bình thường trước đó thì không cần update"]
+    },
+    {
+        "version": "3.1.3",
+        "date": "2026-07-14",
+        "changes": ["update tham số nghỉ của vòng quay hề"]
+    },
+    {
+        "version": "3.1.2",
+        "date": "2026-07-14",
+        "changes": ["fix gấp logic quay vòng quay hề"]
+    },
+    {
+        "version": "3.1.1",
+        "date": "2026-07-14",
+        "changes": ["fix gấp logic quay vòng quay hề", " Chỉnh sửa lại tham số tìm tích xanh còn 5 lần"]
+    },
+    {
+        "version": "3.1.0",
+        "date": "2026-07-14",
+        "changes": ["Thêm tính năng giao đơn hàng cú", "Thêm tính năng quay vòng quay hề free", "Giảm bớt các động tác thừa"]
+    },
+    {
+        "version": "3.0.11",
+        "date": "2026-06-27",
+        "changes": ["fix gấp logic khởi động lại game"]
+    },
+    {
+        "version": "3.0.10",
+        "date": "2026-06-27",
+        "changes": ["Thêm tính năng KHÔNG khởi động lại nếu game đã mở sẵn", "Người dùng có thể tùy chỉnh số lần KHỞI ĐỘNG LẠI game theo ý họ muốn"]
+    },
+    {
+        "version": "3.0.9",
+        "date": "2026-06-25",
+        "changes": ["Thêm tính năng xem thông tin cập nhật khi có phiên bản mới , có thể ấn bỏ qua nếu không muốn cập nhật"]
+    },
+    {
+        "version": "3.0.8",
+        "date": "2026-06-25",
+        "changes": ["Thêm chức năng xem lịch sử cập nhật"]
+    },
+    {
+        "version": "3.0.7",
+        "date": "2026-06-25",
+        "changes": [
+            "Đã hỗ trợ hiển thị đầy đủ cài đặt Quảng Cáo, Thêm Món, và Bán đủ số lượng cho vật phẩm Sự Kiện (Events).",
+            "Tự động chuyển đổi số lượng bán của Events thành biến quantity động.",
+            "Tự động phát hiện và chuyển đổi cổng kết nối ADB (5037 -> 5045) tránh xung đột giữa các giả lập hoặc tool khác."
+        ]
+    },
+    {
+        "version": "3.0.6",
+        "date": "2026-06-10",
+        "changes": ["Tối ưu hóa thuật toán nhận diện ảnh bọ trên tầng.", "Nâng cấp tốc độ phản hồi kéo màn hình."]
+    }
 ]
