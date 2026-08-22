@@ -160,6 +160,7 @@ const ItemKeys = {
     ghcBan: 'ghc-ban',
     vongQuayHeFree: 'vong-quay-he-free',
     vongQuayHeQuay: 'vong-quay-he-quay',
+    chuachon: 'chua-chon',
 }
 
 const TreeKeys = {

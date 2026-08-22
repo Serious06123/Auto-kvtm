@@ -718,6 +718,7 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
         cnt = mutex2.value
     let activeOption = null
     while (itemId) {
+        // cnt = mutex2.value
         if (mutex2.value >= items.value - 1) {
             loop = true
             mutex.value = 0
@@ -758,7 +759,7 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
         }
         // click ads
         if (isAds) {
-            if (!loop || cnt == mutex2.value) {
+            if (cnt == mutex2.value) {
                 var chuaqc = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.chuaqc))
                 if (chuaqc) {
                     await driver.tap(chuaqc.x, chuaqc.y)
@@ -847,6 +848,7 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
                 ])
                 await driver.sleep(1.5)
                 count = 0
+                cnt = mutex2.value
                 continue
             }
             if (mutex.value == 1) {
