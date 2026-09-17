@@ -3,15 +3,19 @@ const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralK
 
 const produceItems = async (driver, isLast, mutex) => {
   await core.goUp(driver, 1)
-  await core.plantTrees(driver, mutex, TreeKeys.duaHau, 4, 5)
+  await core.plantTrees(driver, mutex, TreeKeys.duaHau, 4, 5, true)
   await core.goUp(driver, 4)
-  await core.plantTrees(driver, mutex, TreeKeys.duaHau, 4, 5)
+  await core.plantTrees(driver, mutex, TreeKeys.duaHau, 4, 5, true)
+  await core.goUp(driver, 4)
+  await core.plantTrees(driver, mutex, TreeKeys.duaHau, 2, 5, true)
   await core.goDownLast(driver)
   await core.goUp(driver, 1)
   await driver.sleep(2)
   await core.harvestTrees(driver, mutex, 4, 5)
   await core.goUp(driver, 4)
   await core.harvestTrees(driver, mutex, 4, 5)
+  await core.goUp(driver, 4)
+  await core.harvestTrees(driver, mutex, 2, 5)
   await core.goDownLast(driver)
   if (!isLast) {
     await driver.sleep(0)

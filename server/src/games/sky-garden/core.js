@@ -90,6 +90,7 @@ const openGame = async (driver) => {
     await driver.sleep(1)
     await driver.press(KeyCode.BACK)
     await backToGame(driver)
+    driver.currentFloor = 0
 }
 
 const openChests = async (driver, skipPrepare = false) => {
@@ -150,6 +151,7 @@ const backToGame = async (driver) => {
 }
 
 const goUp = async (driver, times = 1) => {
+    driver.currentFloor = (driver.currentFloor || 0) + times
     for (let i = 0; i < times; i++) {
         await driver.swipe({ x: 50, y: 50 }, { x: 50, y: 60 }, SwipeDirection.DOWN)
         await driver.sleep(0.1)
@@ -158,6 +160,7 @@ const goUp = async (driver, times = 1) => {
 }
 
 const goDown = async (driver, times = 1) => {
+    driver.currentFloor = Math.max(0, (driver.currentFloor || 0) - times)
     for (let i = 0; i < times; i++) {
         await driver.swipe({ x: 50, y: 50 }, { x: 50, y: 40 }, SwipeDirection.UP)
         await driver.sleep(0.1)
@@ -166,10 +169,20 @@ const goDown = async (driver, times = 1) => {
 }
 
 const goDownLast = async (driver) => {
-    await goDown(driver)
-    await goUp(driver, 2)
+    const currentFloor = driver.currentFloor || 0
+    await driver.swipe({ x: 50, y: 50 }, { x: 50, y: 40 }, SwipeDirection.UP)
+    await driver.sleep(0.1)
+    for (let i = 0; i < 2; i++) {
+        await driver.swipe({ x: 50, y: 50 }, { x: 50, y: 60 }, SwipeDirection.DOWN)
+        await driver.sleep(0.1)
+    }
+    await driver.sleep(0.3)
     await driver.tap(50.63, 97.78)
-    await driver.sleep(1)
+    
+    // Tầng 0 = 0.6s, Tầng 4 = 1.0s, Tầng 9-10 max = 1.5s
+    const sleepTime = Math.min(1.5, Math.max(0.6, 0.6 + currentFloor * 0.1))
+    await driver.sleep(sleepTime)
+    driver.currentFloor = 0
 }
 
 const harvestTrees = async (driver, mutex, floor = 4, pot = 5, sukien = false) => {
@@ -646,9 +659,9 @@ const makeItems = async (driver, floor = 1, slot = 0, number = 1, mutex) => {
             { duration: 0, x: x, y: y },
             { duration: 150, x: DefaultProduct.x, y: DefaultProduct.y },
         ])
-        await driver.sleep(0.15)
+        await driver.sleep(0.2)
     }
-
+    await driver.sleep(0.2)
     // 6) Đóng panel, quay lại game
     await driver.tap(16.0, floor === 1 ? 86.0 : 65.0)
     await driver.sleep(0.1)
