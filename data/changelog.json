@@ -4,6 +4,7 @@
         "date": "2026-09-18",
         "changes": [
             "LƯU Ý TRƯỚC KHI BẤM UPDATE : Nên copy mấy cái file auto mà bạn chỉnh sửa trong các auto mẫu của mình ra thành 1 auto mới để không bị reset lại logic ban đầu khi update",
+            "Những ai trồng cây tới tầng 9 10 mới nên update, còn lại đừng update vì tốn thời gian update",
             "Chỉnh thời gian nghỉ khi kéo xuống cuối ở các tầng trên lâu hơn, tránh các trường hợp lỗi không mong muốn",
             "Cập nhật lại link source code của tác giả gốc(CONGANHHCMUS) "
         ]
