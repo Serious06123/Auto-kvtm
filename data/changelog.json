@@ -1,5 +1,14 @@
 [
     {
+        "version": "3.1.6",
+        "date": "2026-09-18",
+        "changes": [
+            "LƯU Ý TRƯỚC KHI BẤM UPDATE : Nên copy mấy cái file auto mà bạn chỉnh sửa trong các auto mẫu của mình ra thành 1 auto mới để không bị reset lại logic ban đầu khi update",
+            "Chỉnh thời gian nghỉ khi kéo xuống cuối ở các tầng trên lâu hơn, tránh các trường hợp lỗi không mong muốn",
+            "Cập nhật lại link source code của tác giả gốc(CONGANHHCMUS) "
+        ]
+    },
+    {
         "version": "3.1.5",
         "date": "2026-08-23",
         "changes": [
