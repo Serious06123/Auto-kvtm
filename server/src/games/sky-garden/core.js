@@ -1,5 +1,5 @@
-const { back } = require('appium-uiautomator2-driver/build/lib/commands/navigation')
 const { KeyCode, SwipeDirection } = require('../../engine/webdriverio')
+const { sanitizeDeviceId } = require('../../engine/adb')
 const { detectBugInROIs } = require('../../engine/image')
 const fs = require('fs')
 const {
@@ -26,12 +26,15 @@ const {
 } = require('./const')
 
 const { resolve } = require('path')
-const { is } = require('bluebird')
-const openGame = async (driver) => {
+const { P } = require('../../services/params')
+const { sendAlert } = require('../../services/notify')
+const stats = require('../../services/stats')
+const openGame = async (driver, _retryDepth = 0) => {
+    driver.setStep?.('Đang khởi động lại game')
     await driver.press(KeyCode.HOME)
     await driver.closeApp(ItemKeys.gameId)
     await driver.openApp(ItemKeys.gameId)
-    await driver.sleep(5)
+    await driver.sleep(P('game.afterLaunchDelay'))
     // reset current window size
     await driver.setCurrentWindowSize()
 
@@ -39,7 +42,7 @@ const openGame = async (driver) => {
     let count = 0
     let tk = null
     await driver.tap(85.9, 91.9)
-    while (!tk && count < 10) {
+    while (!tk && count < P('game.loginRetry')) {
         tk = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.dangnhap), SlotPositions.p3p4)
         if (tk) {
             await driver.tap(tk.x, tk.y)
@@ -53,7 +56,7 @@ const openGame = async (driver) => {
     }
     count = 0
     while (!gamePosition) {
-        if (count > 20) break
+        if (count > P('game.findServerRetry')) break
         await driver.tap(97.1, 97.1)
         await driver.sleep(1)
         await driver.tap(85.9, 91.9)
@@ -63,13 +66,19 @@ const openGame = async (driver) => {
         count++
     }
     count = 0
+    if (!gamePosition) {
+        if (_retryDepth < 3 && !(driver.isStopped && driver.isStopped())) {
+            return await openGame(driver, _retryDepth + 1)
+        }
+        throw new Error('openGame: server button (game1) not found')
+    }
     await driver.tap(gamePosition.x, gamePosition.y)
-    await driver.sleep(15)
+    await driver.sleep(P('game.afterSelectServerDelay'))
 
     // reset current window size
     await driver.setCurrentWindowSize()
     let kc = null
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < P('game.backPressCount'); i++) {
         await driver.press(KeyCode.BACK)
         await driver.sleep(1)
     }
@@ -77,7 +86,12 @@ const openGame = async (driver) => {
     await driver.tap(59.2, 62.5)
     await driver.sleep(1)
     while (!kc) {
-        if (count > 5) return await openGame(driver)
+        if (count > 5) {
+            if (_retryDepth < 3 && !(driver.isStopped && driver.isStopped())) {
+                return await openGame(driver, _retryDepth + 1)
+            }
+            throw new Error('openGame: game failed to load (shopGem not found)')
+        }
         kc = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.shopGem), SlotPositions.p3p4)
         count++
     }
@@ -94,6 +108,7 @@ const openGame = async (driver) => {
 }
 
 const openChests = async (driver, skipPrepare = false) => {
+    driver.setStep?.('Đang mở rương')
     if (!skipPrepare) {
         await goDownLast(driver)
     }
@@ -136,16 +151,10 @@ const openChests = async (driver, skipPrepare = false) => {
 }
 
 const backToGame = async (driver) => {
-    await driver.press(KeyCode.BACK)
-    await driver.sleep(0.1)
-    await driver.press(KeyCode.BACK)
-    await driver.sleep(0.1)
-    await driver.press(KeyCode.BACK)
-    await driver.sleep(0.1)
-    await driver.press(KeyCode.BACK)
-    await driver.sleep(0.1)
-    await driver.press(KeyCode.BACK)
-    await driver.sleep(0.1)
+    for (let i = 0; i < P('game.backToGamePresses'); i++) {
+        await driver.press(KeyCode.BACK)
+        await driver.sleep(P('game.backToGameDelay'))
+    }
     await driver.tap(57.4, 61.9)
     await driver.sleep(0.5)
 }
@@ -153,34 +162,34 @@ const backToGame = async (driver) => {
 const goUp = async (driver, times = 1) => {
     driver.currentFloor = (driver.currentFloor || 0) + times
     for (let i = 0; i < times; i++) {
-        await driver.swipe({ x: 50, y: 50 }, { x: 50, y: 60 }, SwipeDirection.DOWN)
-        await driver.sleep(0.1)
+        await driver.swipe({ x: 50, y: 50 }, { x: 50, y: 50 + P('scroll.upDistance') }, SwipeDirection.DOWN)
+        await driver.sleep(P('scroll.delayBetweenSwipe'))
     }
-    await driver.sleep(0.3)
+    await driver.sleep(P('scroll.delayAfterScroll'))
 }
 
 const goDown = async (driver, times = 1) => {
     driver.currentFloor = Math.max(0, (driver.currentFloor || 0) - times)
     for (let i = 0; i < times; i++) {
-        await driver.swipe({ x: 50, y: 50 }, { x: 50, y: 40 }, SwipeDirection.UP)
-        await driver.sleep(0.1)
+        await driver.swipe({ x: 50, y: 50 }, { x: 50, y: 50 - P('scroll.downDistance') }, SwipeDirection.UP)
+        await driver.sleep(P('scroll.delayBetweenSwipe'))
     }
-    await driver.sleep(0.3)
+    await driver.sleep(P('scroll.delayAfterScroll'))
 }
 
 const goDownLast = async (driver) => {
     const currentFloor = driver.currentFloor || 0
-    await driver.swipe({ x: 50, y: 50 }, { x: 50, y: 40 }, SwipeDirection.UP)
-    await driver.sleep(0.1)
+    await driver.swipe({ x: 50, y: 50 }, { x: 50, y: 50 - P('scroll.downDistance') }, SwipeDirection.UP)
+    await driver.sleep(P('scroll.delayBetweenSwipe'))
     for (let i = 0; i < 2; i++) {
-        await driver.swipe({ x: 50, y: 50 }, { x: 50, y: 60 }, SwipeDirection.DOWN)
-        await driver.sleep(0.1)
+        await driver.swipe({ x: 50, y: 50 }, { x: 50, y: 50 + P('scroll.upDistance') }, SwipeDirection.DOWN)
+        await driver.sleep(P('scroll.delayBetweenSwipe'))
     }
-    await driver.sleep(0.3)
+    await driver.sleep(P('scroll.delayAfterScroll'))
     await driver.tap(50.63, 97.78)
     
     // Tầng 0 = 0.6s, Tầng 4 = 1.0s, Tầng 9-10 max = 1.5s
-    const sleepTime = Math.min(1.5, Math.max(0.6, 0.6 + currentFloor * 0.1))
+    const sleepTime = Math.min(P('scroll.goDownLastMaxSleep'), Math.max(P('scroll.goDownLastMinSleep'), P('scroll.goDownLastMinSleep') + currentFloor * P('scroll.goDownLastPerFloor')))
     await driver.sleep(sleepTime)
     driver.currentFloor = 0
 }
@@ -189,9 +198,10 @@ const harvestTrees = async (driver, mutex, floor = 4, pot = 5, sukien = false) =
     if (mutex.value >= 1) {
         return
     }
+    driver.setStep?.('Đang thu hoạch cây')
     const { x, y } = DefaultBasket
     const pointList = [{ duration: 0, x: x, y: y }]
-    const duration = 25
+    const duration = P('plant.harvestSwipeDuration')
 
     for (let i = 0; i < FirstRowSlotList.length && floor >= 1; i++) {
         if (i > pot && floor == 1) break
@@ -228,10 +238,10 @@ const harvestTrees = async (driver, mutex, floor = 4, pot = 5, sukien = false) =
         if (i >= pot && floor == 4) break
     }
     await driver.tap(36.8, 91.3)
-    await driver.sleep(0.1)
+    await driver.sleep(P('plant.openMenuDelay'))
     let count = 0
     while (!(await driver.haveItemOnScreen(_getItemPath(ItemKeys.harvestBasket), SlotPositions.thuhoach))) {
-        if (count > 10) {
+        if (count > P('plant.harvestMaxRetry')) {
             await backToGame(driver)
             if (!(await haveshoponscreen(driver))) {
                 await openGame(driver)
@@ -241,10 +251,10 @@ const harvestTrees = async (driver, mutex, floor = 4, pot = 5, sukien = false) =
             break
         }
         await driver.tap(36.8, 91.3)
-        await driver.sleep(0.1)
+        await driver.sleep(P('plant.openMenuDelay'))
         count++
     }
-    if (count <= 10) {
+    if (count <= P('plant.harvestMaxRetry')) {
         await driver.action(pointList)
         if (!sukien) await backToGame(driver)
     }
@@ -284,40 +294,41 @@ const catchBugAtPot = async (driver, potIndex, absoluteFloorIndex, startFloorInd
     console.log(`Đang thử bắt bọ trực tiếp tại Chậu thứ ${potIndex + 1} ở Tầng ${absoluteFloorIndex + 1} (Tọa độ tap: ${targetX}, ${targetY})`)
 
     await driver.tap(targetX, targetY)
-    await driver.sleep(0.5)
+    await driver.sleep(P('bug.tapPotDelay'))
     let votxanh = null
     for (let i = 0; i <= 2; i++) {
-        votxanh = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.xanhbatbo), SlotPositions.batbo, 0.6)
+        votxanh = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.xanhbatbo), SlotPositions.batbo, P('bug.netMatchRate'))
         if (votxanh) break
-        await driver.sleep(0.1)
+        await driver.sleep(P('image.retryDelay'))
     }
     if (votxanh) {
         console.log(`Đã phát hiện thấy Vợt Xanh! Tiến hành kéo vợt bắt bọ.`)
         const pointList = [{ duration: 0, x: votxanh.x, y: votxanh.y }]
-        const duration = 300 * DelayTime
+        const duration = P('bug.netSwipeDuration')
         pointList.push({
             duration,
             x: targetX + 2,
             y: targetY - 1,
         })
         await driver.action(pointList)
-        await driver.sleep(0.5)
+        await driver.sleep(P('bug.afterNetDelay'))
         await driver.tap(94.6, 4.6)
-        await driver.sleep(0.5)
+        await driver.sleep(P('bug.closePanelDelay'))
         // Khi bắt thành công, đánh dấu chậu này đã được xử lý
         checkedPots.add(`${absoluteFloorIndex}_${potIndex}`)
         return true
     } else {
         console.log(`Chậu thứ ${potIndex + 1} không có vợt xanh, đóng bảng chọn.`)
         checkedPots.add(potId)
-        await driver.sleep(0.5)
+        await driver.sleep(P('bug.closePanelDelay'))
         await driver.tap(94.6, 4.6)
-        await driver.sleep(0.5)
+        await driver.sleep(P('bug.closePanelDelay'))
         return false
     }
 }
 
 const findbugonfloor = async (driver, BugKeys) => {
+    driver.setStep?.('Đang bắt bọ')
     // Chuẩn hóa và thiết lập giới hạn số lượng bắt cho từng loại bọ
     const normalizeKey = (k) => {
         if (k === 'ong' || k === 'ong-vang') return 'ong-vang'
@@ -402,7 +413,7 @@ const findbugonfloor = async (driver, BugKeys) => {
             for (let roi of bugROIs) {
                 allROIs.push({
                     x: roi.x,
-                    y: roi.y - floorOffset * 220,
+                    y: roi.y - floorOffset * P('bug.floorRowHeight'),
                     w: roi.w,
                     h: roi.h,
                     floorIndex: actualFloorIndex,
@@ -413,10 +424,12 @@ const findbugonfloor = async (driver, BugKeys) => {
         if (allROIs.length === 0) break
 
         console.log(`Đang chụp ảnh phân tích Tầng ${startFloorIndex + 1} đến ${Math.min(10, startFloorIndex + 4)}...`)
+        driver.setStep?.(`Đang bắt bọ tầng ${startFloorIndex + 1}-${Math.min(10, startFloorIndex + 4)}`)
         let screenshots = []
-        for (let s = 0; s < 3; s++) {
+        const shotCount = P('bug.screenshotCount')
+        for (let s = 0; s < shotCount; s++) {
             screenshots.push(await driver.screenshot())
-            if (s < 2) await driver.sleep(0.2)
+            if (s < shotCount - 1) await driver.sleep(P('bug.screenshotInterval'))
         }
 
         let detectedBugs = await detectBugInROIs(screenshots, allROIs, activeBugsForRound, startFloorIndex)
@@ -450,6 +463,7 @@ const findbugonfloor = async (driver, BugKeys) => {
                 if (success) {
                     totalCaught++
                     caughtCounts[normBugKey]++
+                    stats.recordBugCaught(normBugKey, 1)
                 }
             }
         }
@@ -478,6 +492,7 @@ const findbugonfloor = async (driver, BugKeys) => {
                 if (success) {
                     totalCaught++
                     caughtCounts[normBugKey]++
+                    stats.recordBugCaught(normBugKey, 1)
                 }
             }
 
@@ -544,8 +559,9 @@ const findTreeOnScreen = async (driver, treeKey, isFindNext = true) => {
 }
 const plantTrees = async (driver, mutex, treeKey, floor = 4, pot = 5, isFindNext = true, sukien = false) => {
     if (mutex.value >= 1) return
+    driver.setStep?.(`Đang trồng cây (${treeKey})`)
     await driver.tap(36.8, 91.3)
-    await driver.sleep(0.1)
+    await driver.sleep(P('plant.openMenuDelay'))
     let slotTree = await findTreeOnScreen(driver, treeKey, isFindNext)
     if (!slotTree) {
         if (!(await haveshoponscreen(driver))) {
@@ -556,7 +572,7 @@ const plantTrees = async (driver, mutex, treeKey, floor = 4, pot = 5, isFindNext
         await harvestTrees(driver, mutex)
         await driver.sleep(0.5)
         await driver.tap(36.8, 91.3)
-        await driver.sleep(0.1)
+        await driver.sleep(P('plant.openMenuDelay'))
         slotTree = await findTreeOnScreen(driver, treeKey, isFindNext)
         if (!slotTree) {
             await backToGame(driver)
@@ -564,7 +580,7 @@ const plantTrees = async (driver, mutex, treeKey, floor = 4, pot = 5, isFindNext
         }
     }
     const pointList = [{ duration: 0, x: slotTree.x, y: slotTree.y }]
-    const duration = 25
+    const duration = P('plant.swipeDuration')
     // floor 1
     for (let i = 0; i < FirstRowSlotList.length && floor >= 1; i++) {
         if (i > pot && floor == 1) break
@@ -601,7 +617,7 @@ const plantTrees = async (driver, mutex, treeKey, floor = 4, pot = 5, isFindNext
         if (i >= pot && floor == 4) break
     }
 
-    await driver.sleep(0.1)
+    await driver.sleep(P('plant.beforeSwipeDelay'))
     await driver.action(pointList)
     if (!sukien) {
         await backToGame(driver)
@@ -611,19 +627,20 @@ const makeItems = async (driver, floor = 1, slot = 0, number = 1, mutex) => {
     if (mutex.value >= 1) {
         return
     }
+    driver.setStep?.(`Đang sản xuất (tầng ${floor})`)
     const position = { x: 26.3, y: floor === 1 ? 93.6 : 67.3 }
 
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < P('make.preTapCount'); i++) {
         await driver.tap(position.x, position.y)
-        await driver.sleep(0.1)
+        await driver.sleep(P('make.preTapDelay'))
     }
 
     let count = 0
     while (!(await driver.haveItemOnScreen(_getItemPath(ItemKeys.emptyProductionSlot), SlotPositions.p3))) {
         await driver.tap(position.x, position.y)
-        await driver.sleep(0.1)
+        await driver.sleep(P('make.collectDelay'))
         count++
-        if (count > 10) {
+        if (count > P('make.maxRetry')) {
             await backToGame(driver)
             await driver.tap(position.x, position.y)
             await driver.sleep(1)
@@ -635,9 +652,9 @@ const makeItems = async (driver, floor = 1, slot = 0, number = 1, mutex) => {
             await backToGame(driver)
             await driver.sleep(0.5)
             await driver.tap(position.x, position.y)
-            await driver.sleep(0.1)
+            await driver.sleep(P('make.collectDelay'))
             if (await driver.haveItemOnScreen(_getItemPath(ItemKeys.emptyProductionSlot), SlotPositions.p3)) {
-                count = 9
+                count = P('make.maxRetry') - 1
                 continue
             }
             if (!(await haveshoponscreen(driver))) {
@@ -657,16 +674,16 @@ const makeItems = async (driver, floor = 1, slot = 0, number = 1, mutex) => {
     for (let i = 0; i < number; i++) {
         await driver.action([
             { duration: 0, x: x, y: y },
-            { duration: 150, x: DefaultProduct.x, y: DefaultProduct.y },
+            { duration: P('make.dragDuration'), x: DefaultProduct.x, y: DefaultProduct.y },
         ])
-        await driver.sleep(0.2)
+        await driver.sleep(P('make.delayPerItem'))
     }
-    await driver.sleep(0.2)
+    await driver.sleep(P('make.afterMakeDelay'))
     // 6) Đóng panel, quay lại game
     await driver.tap(16.0, floor === 1 ? 86.0 : 65.0)
-    await driver.sleep(0.1)
+    await driver.sleep(P('make.closePanelDelay'))
     await driver.tap(73.5, 60.0)
-    await driver.sleep(0.1)
+    await driver.sleep(P('make.closePanelDelay'))
     await backToGame(driver)
 }
 
@@ -700,12 +717,11 @@ const _sellSelectedItem = async (driver, option, items, itemId, isAds, mutex2) =
     return null
 }
 
-const sellItems = async (driver, option, items, mutex, mutex2, removeItems = false, isAds = true, loop = true, skipPrepare = false) => {
-    if (mutex2.value >= items.value) {
-        loop = true
-        mutex.value = 0
+const sellItems = async (driver, option, items, mutex, mutex2, removeItems = false, isAds = true, loop = true, skipPrepare = false, _retryDepth = 0) => {
+    if (!Array.isArray(items) || items.length === 0) {
         return
     }
+    driver.setStep?.('Đang bán hàng')
     const { x: option_x, y: option_y } = SellOptions[option]
     if (!skipPrepare) {
         await backToGame(driver)
@@ -714,43 +730,48 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
     }
     // open
     await driver.tap(64.3, 85.5)
-    await driver.sleep(1)
+    await driver.sleep(P('sell.openShopDelay'))
 
     await driver.action([
         { duration: 0, x: 23.8, y: 54.9 },
-        { duration: 300, x: 74.4, y: 54.9 },
+        { duration: P('sell.scrollShopDuration'), x: 74.4, y: 54.9 },
     ])
-    await driver.sleep(0.2)
+    await driver.sleep(P('scroll.delayBetweenSwipe'))
     await driver.action([
         { duration: 0, x: 23.8, y: 54.9 },
-        { duration: 300, x: 74.4, y: 54.9 },
+        { duration: P('sell.scrollShopDuration'), x: 74.4, y: 54.9 },
     ])
-    await driver.sleep(1.5)
+    await driver.sleep(P('sell.afterScrollDelay'))
     let itemId = _getItemId(items)
     let count = 0,
         cnt = mutex2.value
     let activeOption = null
+    const stallState = {
+        lastSaleTime: Date.now(),
+        emptyCycles: 0,
+        staleRestarts: 0,
+    }
     while (itemId) {
-        // cnt = mutex2.value
-        if (mutex2.value >= items.value - 1) {
-            loop = true
-            mutex.value = 0
-            break
-        }
+        if (driver.isStopped && driver.isStopped()) break
         var soldSlot = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.soldSlot), SlotPositions.quayhang)
         if (soldSlot !== null) {
             await driver.tap(soldSlot.x, soldSlot.y)
             await driver.sleep(0.1)
             await driver.tap(soldSlot.x, soldSlot.y)
-            await driver.sleep(0.5)
+            await driver.sleep(P('sell.collectMoneyDelay'))
             const currentOption = _getItemOption(items, itemId, option)
             if (activeOption !== currentOption) {
                 const { x: opt_x, y: opt_y } = SellOptions[currentOption]
                 await driver.tap(opt_x, opt_y)
-                await driver.sleep(0.5)
+                await driver.sleep(P('sell.selectSlotDelay'))
                 activeOption = currentOption
             }
+            const beforeSold = mutex2.value
             itemId = await _sellSelectedItem(driver, option, items, itemId, isAds, mutex2)
+            if (mutex2.value > beforeSold) {
+                stallState.lastSaleTime = Date.now()
+                stallState.emptyCycles = 0
+            }
             if (!itemId) break
             continue
         }
@@ -758,15 +779,20 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
         var emptySlot = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.emptySellSlot), SlotPositions.quayhang)
         if (emptySlot != null) {
             await driver.tap(emptySlot.x, emptySlot.y)
-            await driver.sleep(0.6)
+            await driver.sleep(P('sell.selectSlotDelay'))
             const currentOption = _getItemOption(items, itemId, option)
             if (activeOption !== currentOption) {
                 const { x: opt_x, y: opt_y } = SellOptions[currentOption]
                 await driver.tap(opt_x, opt_y)
-                await driver.sleep(0.5)
+                await driver.sleep(P('sell.selectSlotDelay'))
                 activeOption = currentOption
             }
+            const beforeSold = mutex2.value
             itemId = await _sellSelectedItem(driver, option, items, itemId, isAds, mutex2)
+            if (mutex2.value > beforeSold) {
+                stallState.lastSaleTime = Date.now()
+                stallState.emptyCycles = 0
+            }
             if (!itemId) break
             continue
         }
@@ -788,11 +814,11 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
         if (count < 2) {
             await driver.action([
                 { duration: 0, x: 74.4, y: 54.9 },
-                { duration: 3000, x: 23.8, y: 54.9 },
+                { duration: P('sell.scrollBackDuration'), x: 23.8, y: 54.9 },
             ])
         }
 
-        await driver.sleep(0.5)
+        await driver.sleep(P('sell.afterScrollDelay'))
 
         count++
         if (count > 2) {
@@ -809,12 +835,12 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
                             await driver.tap(soldSlot.x, soldSlot.y)
                             await driver.sleep(0.1)
                             await driver.tap(soldSlot.x, soldSlot.y)
-                            await driver.sleep(0.5)
+                            await driver.sleep(P('sell.collectMoneyDelay'))
                             const currentOption = _getItemOption(items, itemId, option)
                             if (activeOption !== currentOption) {
                                 const { x: opt_x, y: opt_y } = SellOptions[currentOption]
                                 await driver.tap(opt_x, opt_y)
-                                await driver.sleep(0.5)
+                                await driver.sleep(P('sell.selectSlotDelay'))
                                 activeOption = currentOption
                             }
                             itemId = await _sellSelectedItem(driver, option, items, itemId, isAds, mutex2)
@@ -825,12 +851,12 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
                         var emptySlot = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.emptySellSlot), SlotPositions.quayhang)
                         if (emptySlot != null) {
                             await driver.tap(emptySlot.x, emptySlot.y)
-                            await driver.sleep(0.6)
+                            await driver.sleep(P('sell.selectSlotDelay'))
                             const currentOption = _getItemOption(items, itemId, option)
                             if (activeOption !== currentOption) {
                                 const { x: opt_x, y: opt_y } = SellOptions[currentOption]
                                 await driver.tap(opt_x, opt_y)
-                                await driver.sleep(0.5)
+                                await driver.sleep(P('sell.selectSlotDelay'))
                                 activeOption = currentOption
                             }
                             itemId = await _sellSelectedItem(driver, option, items, itemId, isAds, mutex2)
@@ -839,33 +865,47 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
                         }
                         continue
                     } else {
-                        if (await driver.haveItemOnScreen(_getItemPath(ItemKeys.chuachon, SlotPositions.p2))) {
+                        if (await driver.haveItemOnScreen(_getItemPath(ItemKeys.chuachon), SlotPositions.p2)) {
                             await driver.press(KeyCode.BACK)
                         } else {
                             await backToGame(driver)
-                            await driver.sleep(1)
                             await driver.tap(66.25, 83.7)
+                            await driver.sleep(P('sell.openShopDelay'))
                         }
                         break
                     }
                 }
             } else if (!loop) {
+                stallState.emptyCycles++
+                const recovery = await _recoverStaleShop(driver, stallState, {
+                    shopTap: { x: 64.3, y: 85.5 },
+                    scrollStart: true,
+                })
+                if (recovery === 'stopped' || recovery === 'max_restarts') {
+                    break
+                }
+                if (recovery === 'refreshed' || recovery === 'restarted') {
+                    activeOption = null
+                    count = 0
+                    cnt = mutex2.value
+                    continue
+                }
                 await driver.action([
                     { duration: 0, x: 23.8, y: 54.9 },
-                    { duration: 300, x: 74.4, y: 54.9 },
+                    { duration: P('sell.scrollShopDuration'), x: 74.4, y: 54.9 },
                 ])
-                await driver.sleep(0.2)
+                await driver.sleep(P('scroll.delayBetweenSwipe'))
                 await driver.action([
                     { duration: 0, x: 23.8, y: 54.9 },
-                    { duration: 300, x: 74.4, y: 54.9 },
+                    { duration: P('sell.scrollShopDuration'), x: 74.4, y: 54.9 },
                 ])
-                await driver.sleep(1.5)
+                await driver.sleep(P('sell.afterScrollDelay'))
                 count = 0
                 cnt = mutex2.value
                 continue
             }
-            if (mutex.value == 1) {
-                return await sellItems(driver, option, items, mutex, mutex2, removeItems, isAds, loop, skipPrepare)
+            if (mutex.value == 1 && _retryDepth < 3 && !(driver.isStopped && driver.isStopped())) {
+                return await sellItems(driver, option, items, mutex, mutex2, removeItems, isAds, loop, skipPrepare, _retryDepth + 1)
             }
             break
         }
@@ -874,27 +914,36 @@ const sellItems = async (driver, option, items, mutex, mutex2, removeItems = fal
 }
 
 const sellEventItems = async (driver, itemKey, quantity = 9999, isAds = false) => {
+    driver.setStep?.(`Đang bán đồ sự kiện (${itemKey})`)
     await backToGame(driver)
     await goDownLast(driver)
     const { x: option_x, y: option_y } = SellOptions[SellItemOptions.events] // event item
     // open
     await driver.tap(66.25, 83.7)
-    await driver.sleep(1)
+    await driver.sleep(P('sell.openShopDelay'))
     let count = 0,
         cnt = 0
+    const stallState = {
+        lastSaleTime: Date.now(),
+        emptyCycles: 0,
+        staleRestarts: 0,
+    }
     while (cnt < quantity) {
+        if (driver.isStopped && driver.isStopped()) break
         var soldSlot = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.soldSlot), SlotPositions.quayhang)
         if (soldSlot !== null) {
             await driver.tap(soldSlot.x, soldSlot.y)
             await driver.sleep(0.1)
             await driver.tap(soldSlot.x, soldSlot.y)
-            await driver.sleep(0.3)
+            await driver.sleep(P('sell.collectMoneyDelay'))
             await driver.tap(option_x, option_y)
-            await driver.sleep(0.2)
+            await driver.sleep(P('sell.selectSlotDelay'))
             const eventItemSlot = await driver.tapItemOnScreen(_getItemPath(itemKey), SlotPositions.bando)
             if (eventItemSlot) {
                 await _sell(driver, isAds)
                 cnt++
+                stallState.lastSaleTime = Date.now()
+                stallState.emptyCycles = 0
                 continue
             } else {
                 await driver.press(KeyCode.BACK)
@@ -905,23 +954,23 @@ const sellEventItems = async (driver, itemKey, quantity = 9999, isAds = false) =
         if (emptySlot != null) {
             //count++
             await driver.tap(emptySlot.x, emptySlot.y)
-            await driver.sleep(0.3)
+            await driver.sleep(P('sell.selectSlotDelay'))
             await driver.tap(option_x, option_y)
-            await driver.sleep(0.3)
+            await driver.sleep(P('sell.selectSlotDelay'))
             const eventItemSlot1 = await driver.tapItemOnScreen(_getItemPath(itemKey), SlotPositions.bando)
             if (eventItemSlot1) {
                 await _sell(driver, isAds)
                 cnt++
+                stallState.lastSaleTime = Date.now()
+                stallState.emptyCycles = 0
                 continue
             } else {
                 await driver.press(KeyCode.BACK)
                 continue
             }
         }
-        if (!isAds) {
-            continue
-        }
-        if (count == 0) {
+        if (isAds && count == 0) {
+            const chuaqc = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.chuaqc))
             if (chuaqc) {
                 await driver.tap(chuaqc.x, chuaqc.y)
                 await driver.sleep(0.5)
@@ -934,18 +983,25 @@ const sellEventItems = async (driver, itemKey, quantity = 9999, isAds = false) =
         if (count < 2) {
             await driver.action([
                 { duration: 0, x: 80, y: 58.1 },
-                { duration: 3 * 1000, x: 20.875, y: 58.1 },
+                { duration: P('sell.eventScrollDuration'), x: 20.875, y: 58.1 },
             ])
         }
-        await driver.sleep(0.5)
+        await driver.sleep(P('sell.afterScrollDelay'))
         count++
         if (count > 2) {
-            await backToGame(driver)
-            await goDownLast(driver)
-            await driver.tap(66.25, 83.7)
-            await driver.sleep(1)
+            stallState.emptyCycles++
+            const recovery = await _recoverStaleShop(driver, stallState, {
+                shopTap: { x: 66.25, y: 83.7 },
+                scrollStart: false,
+            })
+            if (recovery === 'stopped' || recovery === 'max_restarts') {
+                break
+            }
+            if (recovery === 'waited') {
+                const ok = await _reopenShop(driver, { x: 66.25, y: 83.7 }, false)
+                if (!ok) break
+            }
             count = 0
-            cnt = 0
             continue
         }
     }
@@ -974,12 +1030,12 @@ const goFriendHouse = async (driver, index) => {
     await driver.tapItemOnScreen(_getItemPath(ItemKeys.friendHouse), SlotPositions.p3p4)
     await driver.sleep(0.5)
     await driver.tap(x, y)
-    await driver.sleep(2)
+    await driver.sleep(P('game.friendVisitDelay'))
 }
 
 const goMyHouse = async (driver) => {
     await driver.tapItemOnScreen(_getItemPath(ItemKeys.myHouse), SlotPositions.p3p4)
-    await driver.sleep(2)
+    await driver.sleep(P('game.friendVisitDelay'))
 }
 
 const makeEvents = async (driver) => {
@@ -1054,7 +1110,6 @@ const ensurePythonServer = async () => {
                 const rootDir = resolve(__dirname, '../../../../')
 
                 const fs = require('fs')
-                const outLog = fs.openSync(resolve(rootDir, 'ocr_server.log'), 'a')
 
                 // Ưu tiên 1: ocr_server.exe (PyInstaller - không cần Python)
                 const exePath = resolve(rootDir, 'ai_server', 'ocr_server', 'ocr_server.exe')
@@ -1074,16 +1129,25 @@ const ensurePythonServer = async () => {
                     console.log(`[AI] Sử dụng Python: ${spawnCmd}`)
                 }
 
-                const child = spawn(spawnCmd, spawnArgs, {
-                    stdio: ['ignore', outLog, outLog],
-                    windowsHide: true,
-                    cwd: rootDir,
-                    env: { ...process.env, PYTHONIOENCODING: 'utf8' },
-                })
-                child.unref()
+                let outLog = null
+                try {
+                    outLog = fs.openSync(resolve(rootDir, 'ocr_server.log'), 'a')
+                    const child = spawn(spawnCmd, spawnArgs, {
+                        stdio: ['ignore', outLog, outLog],
+                        windowsHide: true,
+                        cwd: rootDir,
+                        env: { ...process.env, PYTHONIOENCODING: 'utf8' },
+                    })
+                    child.unref()
+                } finally {
+                    if (outLog !== null) {
+                        try { fs.closeSync(outLog) } catch (_) {}
+                    }
+                }
 
-                // Đợi tối đa 30 giây cho PyTorch nạp xong vào RAM (Bản EXE thường chậm hơn ở lần đầu)
-                for (let i = 0; i < 15; i++) {
+                // Đợi cho PyTorch nạp xong vào RAM (Bản EXE thường chậm hơn ở lần đầu)
+                const waitLoops = P('ocr.startupWaitLoops')
+                for (let i = 0; i < waitLoops; i++) {
                     await new Promise((r) => setTimeout(r, 1000))
                     if (await pingServer()) {
                         console.log('\n[Tiết kiệm RAM] Nạp AI thành công! Tiếp tục quét kho...')
@@ -1091,7 +1155,7 @@ const ensurePythonServer = async () => {
                         return
                     }
                 }
-                console.error('\n[Tiết kiệm RAM] Quá 15 giây vẫn chưa nạp xong AI!')
+                console.error(`\n[Tiết kiệm RAM] Quá ${waitLoops} giây vẫn chưa nạp xong AI!`)
                 resolvePromise(false)
             } catch (err) {
                 console.error('\n[Tiết kiệm RAM] Lỗi khi cố gắng bật AI:', err)
@@ -1131,6 +1195,8 @@ const shutdownPythonServer = async () => {
 }
 
 const readNumbersAndSave = async (driver, type, skipPrepare = false, keepOpen = false, panelAlreadyOpen = false) => {
+    driver.setStep?.(`Đang đọc OCR kho ${type}`)
+    let ocrRequestFailed = false
     try {
         if (!skipPrepare && !panelAlreadyOpen) {
             await backToGame(driver)
@@ -1170,7 +1236,7 @@ const readNumbersAndSave = async (driver, type, skipPrepare = false, keepOpen = 
                         path: '/ocr',
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        timeout: 20000, // 20 giây tối đa
+                        timeout: P('ocr.requestTimeout'),
                     },
                     (res) => {
                         let body = ''
@@ -1212,6 +1278,7 @@ const readNumbersAndSave = async (driver, type, skipPrepare = false, keepOpen = 
                 req.end()
             })
         } catch (e) {
+            ocrRequestFailed = true
             console.error('Lỗi API gọi Python:', e.message)
         }
 
@@ -1321,6 +1388,7 @@ const readNumbersAndSave = async (driver, type, skipPrepare = false, keepOpen = 
             while (current.length >= 2 && parseInt(current) >= parseInt(max) + 50 && parseInt(max) > 0) {
                 if (parseInt(current) / parseInt(max) <= 2) {
                     current = (parseInt(max) + 50).toString() // Quan trọng: Phải chuyển lại thành String
+                    break
                 } else {
                     current = current.slice(0, -1)
                 }
@@ -1334,6 +1402,20 @@ const readNumbersAndSave = async (driver, type, skipPrepare = false, keepOpen = 
             parsedNumbers = '0'
         }
 
+        if (ocrRequestFailed || parsedNumbers === '0') {
+            driver._consecutiveOcrErrors = (driver._consecutiveOcrErrors || 0) + 1
+            if (driver._consecutiveOcrErrors >= 3) {
+                sendAlert('ocrError', {
+                    deviceId: driver.deviceId,
+                    title: 'Lỗi OCR liên tiếp',
+                    message: `Đọc OCR kho ${type} thất bại/trả về rỗng ${driver._consecutiveOcrErrors} lần liên tiếp.`,
+                }).catch(() => {})
+            }
+        } else {
+            driver._consecutiveOcrErrors = 0
+            stats.recordOcr(driver.deviceId || 'unknown', type, parsedNumbers)
+        }
+
         console.log(`[OCR CLEAN] Output: "${parsedNumbers}"`)
 
         // Xuất file chính thức ghi đè dạng "x y a b c d"
@@ -1341,7 +1423,8 @@ const readNumbersAndSave = async (driver, type, skipPrepare = false, keepOpen = 
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true })
         }
-        const fileName = resolve(dir, `kho_${type}_data_${driver.deviceId || 'unknown'}.txt`)
+        const safeDevice = sanitizeDeviceId(driver.deviceId || 'unknown')
+        const fileName = resolve(dir, `kho_${type}_data_${safeDevice}.txt`)
         fs.writeFileSync(fileName, parsedNumbers, 'utf8')
 
         if (!keepOpen) {
@@ -1372,6 +1455,7 @@ const giaoHangCu = async (driver, gameOptions = {}, loopIndex = 0, skipPrepare =
     if (loopIndex % giaoHangCuFrequency !== 0) return
 
     console.log(`[Giao hàng cú] Bắt đầu chạy ở chu kỳ ${loopIndex}...`)
+    driver.setStep?.('Đang giao hàng cú')
 
     if (!skipPrepare) {
         await backToGame(driver)
@@ -1496,15 +1580,16 @@ const giaoHangCu = async (driver, gameOptions = {}, loopIndex = 0, skipPrepare =
     if (giaoHangCuRegular) {
         console.log(`[Giao hàng cú] Đang xử lý đơn hàng thường...`)
         let limitCount = 0
+        let tichxanhcount = 0
         while (limitCount++ < 20) {
             const tichXanh = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcTichXanh), 'giaohangcu')
-            let tichxanhcount = 0
             if (!tichXanh) {
                 console.log(`[Giao hàng cú] Không tìm thấy đơn thường tích xanh (ghc-tich-xanh).`)
                 await driver.sleep(0.1)
                 if (tichxanhcount++ > 5) break
                 continue
             }
+            tichxanhcount = 0
 
             console.log(`[Giao hàng cú] Phát hiện tích xanh tại (${tichXanh.x}, ${tichXanh.y}). Tiến hành tap...`)
             for (let i = 0; i < 3; i++) {
@@ -1518,17 +1603,22 @@ const giaoHangCu = async (driver, gameOptions = {}, loopIndex = 0, skipPrepare =
                 if (!btnGiao) {
                     let btnBan = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcBan), 'kimcuongcu')
                     if (btnBan) {
+                        console.log(`[Giao hàng cú] Chưa có nút Giao, nhấn nút Bán tại (${btnBan.x}, ${btnBan.y})...`)
+                        await driver.tap(btnBan.x, btnBan.y)
+                        await driver.sleep(0.5)
                         let loopghc = false
                         let retryCount = 0
                         while (!loopghc && retryCount++ < 20) {
                             let giaoHang = await driver.getCoordinateItemOnScreen(_getItemPath(ItemKeys.ghcGiaoHang), 'kimcuongcu')
                             if (giaoHang) {
+                                btnGiao = giaoHang
                                 loopghc = true
                                 await driver.sleep(0.25)
                             } else {
                                 await driver.sleep(0.5)
                             }
                         }
+                        if (btnGiao) break
                     } else break
                 } else break
                 await driver.sleep(0.2)
@@ -1617,6 +1707,7 @@ const giaoHangCu = async (driver, gameOptions = {}, loopIndex = 0, skipPrepare =
 
 const vongQuayHeFree = async (driver, skipPrepare = false) => {
     console.log(`[Vòng quay hề] Bắt đầu kiểm tra vòng quay chú hề free...`)
+    driver.setStep?.('Đang quay vòng quay chú hề')
     if (!skipPrepare) {
         await backToGame(driver)
         await goDownLast(driver)
@@ -1633,7 +1724,7 @@ const vongQuayHeFree = async (driver, skipPrepare = false) => {
         if (btnQuay) {
             console.log(`[Vòng quay hề] Tiến hành tap nút quay tại (${btnQuay.x}, ${btnQuay.y})...`)
             await driver.tap(btnQuay.x, btnQuay.y)
-            await driver.sleep(9)
+            await driver.sleep(P('game.clownSpinWait'))
             await driver.tap(btnQuay.x, btnQuay.y)
         } else {
             console.log(`[Vòng quay hề] Không thấy nút quay (vong-quay-he-quay).`)
@@ -1671,6 +1762,101 @@ module.exports = {
 }
 
 // private method
+
+const _sleepInterruptible = async (driver, seconds) => {
+    let remaining = Math.max(0, Number(seconds) || 0)
+    while (remaining > 0) {
+        if (driver.isStopped && driver.isStopped()) return false
+        const chunk = Math.min(1, remaining)
+        await driver.sleep(chunk, { compensate: false })
+        remaining -= chunk
+    }
+    return !(driver.isStopped && driver.isStopped())
+}
+
+const _scrollShopToStart = async (driver) => {
+    await driver.action([
+        { duration: 0, x: 23.8, y: 54.9 },
+        { duration: P('sell.scrollShopDuration'), x: 74.4, y: 54.9 },
+    ])
+    await driver.sleep(P('scroll.delayBetweenSwipe'))
+    await driver.action([
+        { duration: 0, x: 23.8, y: 54.9 },
+        { duration: P('sell.scrollShopDuration'), x: 74.4, y: 54.9 },
+    ])
+    await driver.sleep(P('sell.afterScrollDelay'))
+}
+
+const _reopenShop = async (driver, shopTap = { x: 64.3, y: 85.5 }, scrollStart = true) => {
+    await backToGame(driver)
+    if (!(await _sleepInterruptible(driver, 1.5))) return false
+    await driver.tap(shopTap.x, shopTap.y)
+    await driver.sleep(P('sell.openShopDelay'))
+    if (scrollStart) {
+        await _scrollShopToStart(driver)
+    }
+    return !(driver.isStopped && driver.isStopped())
+}
+
+const _recoverStaleShop = async (driver, stallState, { shopTap = { x: 64.3, y: 85.5 }, scrollStart = true } = {}) => {
+    if (driver.isStopped && driver.isStopped()) return 'stopped'
+
+    const staleRestartMinutes = Number(P('sell.staleRestartMinutes')) || 0
+    const maxStaleRestarts = Number(P('sell.maxStaleRestarts')) || 0
+    const softRefreshCycles = Number(P('sell.softRefreshCycles')) || 0
+    const idleWait = Number(P('sell.idleWaitWhenFull')) || 0
+
+    // Cấp 2: Quá lâu không bán được món nào -> thoát game vào lại rồi bán tiếp
+    if (staleRestartMinutes > 0 && Date.now() - stallState.lastSaleTime >= staleRestartMinutes * 60 * 1000) {
+        if (maxStaleRestarts > 0 && stallState.staleRestarts >= maxStaleRestarts) {
+            console.log(`[Bán hàng] Đã đạt giới hạn ${maxStaleRestarts} lần khởi động lại khi kẹt bán, thoát vòng bán.`)
+            sendAlert('sellStalled', {
+                deviceId: driver.deviceId,
+                title: 'Kẹt bán hàng vượt giới hạn restart',
+                message: `Quầy bán bị kẹt quá ${staleRestartMinutes} phút và đã đạt giới hạn ${maxStaleRestarts} lần khởi động lại.`,
+            }).catch(() => {})
+            return 'max_restarts'
+        }
+        stallState.staleRestarts++
+        stats.recordRestart('game')
+        driver.setStep?.(`Bán hàng: khởi động lại game (lần ${stallState.staleRestarts})`)
+        console.log(`[Bán hàng] Quá ${staleRestartMinutes} phút không bán được món nào → thoát game vào lại (lần ${stallState.staleRestarts}) và tiếp tục bán...`)
+        sendAlert('sellStalled', {
+            deviceId: driver.deviceId,
+            title: 'Kẹt bán hàng ban đêm',
+            message: `Quá ${staleRestartMinutes} phút không bán được thêm món nào → khởi động lại game lần ${stallState.staleRestarts}.`,
+        }).catch(() => {})
+        await (module.exports.openGame || openGame)(driver)
+        if (driver.isStopped && driver.isStopped()) return 'stopped'
+        await driver.sleep(0.5)
+        await driver.tap(shopTap.x, shopTap.y)
+        await driver.sleep(P('sell.openShopDelay'))
+        if (scrollStart) {
+            await _scrollShopToStart(driver)
+        }
+        stallState.lastSaleTime = Date.now()
+        stallState.emptyCycles = 0
+        return 'restarted'
+    }
+
+    // Cấp 1: Đóng bảng quầy và mở lại để game đồng bộ trạng thái đã bán
+    if (softRefreshCycles > 0 && stallState.emptyCycles >= softRefreshCycles) {
+        driver.setStep?.('Bán hàng: làm mới quầy')
+        console.log(`[Bán hàng] Quầy không đổi sau ${stallState.emptyCycles} chu kỳ trống → đóng và mở lại quầy để đồng bộ...`)
+        const ok = await _reopenShop(driver, shopTap, scrollStart)
+        if (!ok) return 'stopped'
+        stallState.emptyCycles = 0
+        return 'refreshed'
+    }
+
+    // Nghỉ chờ nhẹ khi quầy đầy (cập nhật bước để Watchdog không hiểu nhầm treo trong lúc chờ bán dài)
+    driver.setStep?.('Bán hàng: quầy đầy, đang chờ bán...')
+    if (idleWait > 0) {
+        const ok = await _sleepInterruptible(driver, idleWait)
+        if (!ok) return 'stopped'
+    }
+    return 'waited'
+}
 
 const _getItemPath = (itemId) => {
     if (!itemId) return null

@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Checkbox, Col, Row, Select, Button, InputNumber, Flex, Tabs, Divider, notification, message, Modal, Input } from 'antd'
+import { Checkbox, Col, Row, Select, Button, InputNumber, Flex, Tabs, Divider, notification, message, Modal, Input, Popconfirm, Space } from 'antd'
 import * as styles from './SkyGarden.module.css'
 import axios from 'axios'
 import CreateAutoModal from './CreateAutoModal'
-import { PlayCircleOutlined, EditOutlined, PlusOutlined, SyncOutlined } from '@ant-design/icons'
+import { PlayCircleOutlined, EditOutlined, PlusOutlined, SyncOutlined, SaveOutlined, DeleteOutlined, RocketOutlined } from '@ant-design/icons'
+
+const STORAGE_KEY = 'auto_kvtm_skygarden_last'
 
 // const CATS is no longer static. We determine categories dynamically from the auto options.
 
@@ -24,6 +26,7 @@ const SkyGarden = (props) => {
 
   const [selectedAuto, setSelectedAuto] = useState('') // gửi lên backend
   const [selectedByCat, setSelectedByCat] = useState({})
+  const [activeCatTab, setActiveCatTab] = useState('tree')
 
   const [frequency, setFrequency] = useState(9999)
   const [quantity, setQuantity] = useState(9999)
@@ -38,6 +41,7 @@ const SkyGarden = (props) => {
   const [giaoHangCuDeleteInvalid, setGiaoHangCuDeleteInvalid] = useState(false)
   const [giaoHangCuReactivateGem, setGiaoHangCuReactivateGem] = useState(false)
   const [gameOption, setGameOption] = useState(['sellItems', 'openChests', 'openGame'])
+  const [speedMultiplierOverride, setSpeedMultiplierOverride] = useState(null)
   const [autoOption, setAutoOption] = useState([])
   const [createOpen, setCreateOpen] = useState(false)
   const [editingAuto, setEditingAuto] = useState(null)
@@ -47,6 +51,13 @@ const SkyGarden = (props) => {
   const [customCategories, setCustomCategories] = useState([])
   const [newCatModalOpen, setNewCatModalOpen] = useState(false)
   const [newCatName, setNewCatName] = useState('')
+
+  const [profiles, setProfiles] = useState([])
+  const [selectedProfileId, setSelectedProfileId] = useState(null)
+  const [saveProfileModalOpen, setSaveProfileModalOpen] = useState(false)
+  const [profileNameInput, setProfileNameInput] = useState('')
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [hydrated, setHydrated] = useState(false)
 
   const fetchAiStatus = (prevStatus) => {
     axios.get('/api/ai-status').then(({ data }) => {
@@ -66,6 +77,9 @@ const SkyGarden = (props) => {
     axios.get('/api/customCategories')
       .then(({ data }) => setCustomCategories(data))
       .catch(err => console.error('Lỗi khi tải danh mục:', err))
+    axios.get('/api/profiles')
+      .then(({ data }) => setProfiles(Array.isArray(data) ? data : []))
+      .catch(err => console.error('Lỗi khi tải danh sách profile:', err))
   }, [])
 
   useEffect(() => {
@@ -88,12 +102,75 @@ const SkyGarden = (props) => {
     })
   }
 
+  const applyConfig = (opts = {}, autoKey = '', speedOverride = null, optionsList = autoOption) => {
+    if (opts.frequency !== undefined) setFrequency(opts.frequency)
+    if (opts.quantity !== undefined) setQuantity(opts.quantity)
+    if (opts.khoFrequency !== undefined) setKhoFrequency(opts.khoFrequency)
+    if (opts.openGameFrequency !== undefined) setOpenGameFrequency(opts.openGameFrequency)
+    if (opts.noRestartIfOpen !== undefined) setNoRestartIfOpen(Boolean(opts.noRestartIfOpen))
+    if (opts.noRestartPeriodic !== undefined) setNoRestartPeriodic(Boolean(opts.noRestartPeriodic))
+    if (opts.giaoHangCuFrequency !== undefined) setGiaoHangCuFrequency(opts.giaoHangCuFrequency)
+    if (opts.giaoHangCuDailyFree !== undefined) setGiaoHangCuDailyFree(Boolean(opts.giaoHangCuDailyFree))
+    if (opts.giaoHangCuDailyGem !== undefined) setGiaoHangCuDailyGem(Boolean(opts.giaoHangCuDailyGem))
+    if (opts.giaoHangCuRegular !== undefined) setGiaoHangCuRegular(Boolean(opts.giaoHangCuRegular))
+    if (opts.giaoHangCuDeleteInvalid !== undefined) setGiaoHangCuDeleteInvalid(Boolean(opts.giaoHangCuDeleteInvalid))
+    if (opts.giaoHangCuReactivateGem !== undefined) setGiaoHangCuReactivateGem(Boolean(opts.giaoHangCuReactivateGem))
+
+    const boolKeys = [
+      'openGame',
+      'openChests',
+      'vongQuayHeFree',
+      'sellItems',
+      'removeItems',
+      'kho1',
+      'kho2',
+      'sellOtherKho',
+      'giaoHangCu',
+    ]
+    if (boolKeys.some((k) => k in opts)) {
+      setGameOption(boolKeys.filter((k) => Boolean(opts[k])))
+    }
+
+    const nextSpeed = speedOverride !== undefined && speedOverride !== null
+      ? speedOverride
+      : (opts.speedMultiplierOverride ?? null)
+    setSpeedMultiplierOverride(nextSpeed >= 1 ? nextSpeed : null)
+
+    const targetAuto = autoKey || opts.runAuto || ''
+    const matchedAuto = targetAuto ? optionsList.find((x) => x.key === targetAuto) : null
+    if (matchedAuto) {
+      const cat = matchedAuto.category || 'other'
+      setSelectedAuto(targetAuto)
+      setSelectedByCat({ [cat]: targetAuto })
+      setActiveCatTab(cat)
+    } else {
+      setSelectedAuto('')
+      setSelectedByCat({})
+    }
+  }
+
   useEffect(() => {
+    setHydrated(false)
     axios.get(`/api/gameOptions?game=${selectedGame}`).then(({ data }) => {
       const sorted = data.map(normalizeCategory).sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       setAutoOption(sorted)
-      setSelectedByCat({})
-      setSelectedAuto('')
+      let restored = false
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY)
+        if (raw) {
+          const saved = JSON.parse(raw)
+          if (saved && (!saved.selectedGame || saved.selectedGame === selectedGame)) {
+            applyConfig(saved.gameOptions || {}, saved.selectedAuto || '', saved.speedMultiplierOverride ?? null, sorted)
+            restored = true
+          }
+        }
+      } catch (e) {}
+      if (!restored) {
+        setSelectedByCat({})
+        setSelectedAuto('')
+        setActiveCatTab(sorted[0]?.category || 'tree')
+      }
+      setHydrated(true)
     })
   }, [selectedGame])
 
@@ -178,8 +255,8 @@ const SkyGarden = (props) => {
 
   const onSelectedGameOption = (value) => setGameOption(value)
 
-  const runAuto = () => {
-    const data = {
+  const buildGameOptions = () => {
+    const opts = {
       runAuto: selectedAuto,
       openGame: gameOption.includes('openGame'),
       openChests: gameOption.includes('openChests'),
@@ -203,7 +280,116 @@ const SkyGarden = (props) => {
       noRestartIfOpen: noRestartIfOpen,
       noRestartPeriodic: noRestartPeriodic,
     }
-    props.runAuto(data)
+    if (speedMultiplierOverride !== null && speedMultiplierOverride >= 1) {
+      opts.speedMultiplierOverride = speedMultiplierOverride
+    }
+    return opts
+  }
+
+  useEffect(() => {
+    if (!hydrated) return
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          selectedGame,
+          selectedAuto,
+          speedMultiplierOverride,
+          gameOptions: buildGameOptions(),
+        })
+      )
+    } catch (e) {}
+  }, [
+    hydrated,
+    selectedGame,
+    selectedAuto,
+    gameOption,
+    frequency,
+    quantity,
+    khoFrequency,
+    openGameFrequency,
+    noRestartIfOpen,
+    noRestartPeriodic,
+    giaoHangCuFrequency,
+    giaoHangCuDailyFree,
+    giaoHangCuDailyGem,
+    giaoHangCuRegular,
+    giaoHangCuDeleteInvalid,
+    giaoHangCuReactivateGem,
+    speedMultiplierOverride,
+  ])
+
+  const handleSelectProfile = (profileId) => {
+    setSelectedProfileId(profileId || null)
+    if (!profileId) return
+    const profile = profiles.find((p) => p.id === profileId)
+    if (!profile) return
+
+    applyConfig(
+      profile.gameOptions || {},
+      profile.selectedAuto || profile.gameOptions?.runAuto || '',
+      profile.speedMultiplierOverride ?? null,
+      autoOption
+    )
+
+    if (props.setSelectedDevices && Array.isArray(props.devicesOption) && Array.isArray(profile.deviceIds) && profile.deviceIds.length > 0) {
+      const availableIds = new Set(props.devicesOption.filter((d) => !d.disabled).map((d) => d.value))
+      const matched = profile.deviceIds.filter((id) => availableIds.has(id))
+      if (matched.length > 0) {
+        props.setSelectedDevices(matched)
+      } else {
+        message.info('Các thiết bị trong Profile hiện không rảnh/chưa kết nối; giữ nguyên lựa chọn thiết bị hiện tại.')
+      }
+    }
+    message.success(`Đã nạp Profile "${profile.name}"`)
+  }
+
+  const openSaveProfileModal = () => {
+    const existing = profiles.find((p) => p.id === selectedProfileId)
+    setProfileNameInput(existing ? existing.name : '')
+    setSaveProfileModalOpen(true)
+  }
+
+  const handleSaveProfile = async () => {
+    const name = profileNameInput.trim()
+    if (!name) return message.error('Vui lòng nhập tên Profile')
+    setSavingProfile(true)
+    try {
+      const existing = profiles.find((p) => p.id === selectedProfileId)
+      const { data } = await axios.post('/api/profiles', {
+        id: existing && existing.name.toLowerCase() === name.toLowerCase() ? existing.id : undefined,
+        name,
+        selectedGame,
+        selectedAuto,
+        deviceIds: props.selectedDevices || [],
+        gameOptions: buildGameOptions(),
+        speedMultiplierOverride,
+      })
+      setProfiles(data.profiles || [])
+      setSelectedProfileId(data.profile?.id || null)
+      setSaveProfileModalOpen(false)
+      message.success(`Đã lưu Profile "${name}"`)
+    } catch (err) {
+      message.error('Lưu Profile thất bại: ' + (err.response?.data?.error || err.message))
+    } finally {
+      setSavingProfile(false)
+    }
+  }
+
+  const handleDeleteProfile = async () => {
+    if (!selectedProfileId) return
+    try {
+      const { data } = await axios.delete(`/api/profiles/${encodeURIComponent(selectedProfileId)}`)
+      setProfiles(data.profiles || [])
+      setSelectedProfileId(null)
+      message.success('Đã xóa Profile')
+    } catch (err) {
+      message.error('Xóa Profile thất bại: ' + (err.response?.data?.error || err.message))
+    }
+  }
+
+  const runAuto = () => {
+    props.runAuto(buildGameOptions())
   }
 
   // Define tabs for categories dynamically
@@ -229,14 +415,44 @@ const SkyGarden = (props) => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <h3 style={{ marginTop: 0, marginBottom: 16 }}>Game Control Dashboard</h3>
+      <Flex justify="space-between" align="center" wrap="wrap" gap="small" style={{ marginBottom: 16 }}>
+        <h3 style={{ margin: 0 }}>Game Control Dashboard</h3>
+        <Space wrap size="small">
+          <Select
+            style={{ width: 220 }}
+            allowClear
+            placeholder="Chọn Profile đã lưu..."
+            value={selectedProfileId}
+            onChange={handleSelectProfile}
+            options={profiles.map((p) => ({
+              value: p.id,
+              label: `${p.name} (${(p.deviceIds || []).length} máy${p.speedMultiplierOverride ? `, ${p.speedMultiplierOverride}x` : ''})`,
+            }))}
+          />
+          <Button icon={<SaveOutlined />} onClick={openSaveProfileModal}>
+            Lưu Profile
+          </Button>
+          <Popconfirm title="Xóa Profile đang chọn?" onConfirm={handleDeleteProfile} disabled={!selectedProfileId}>
+            <Button danger icon={<DeleteOutlined />} disabled={!selectedProfileId} />
+          </Popconfirm>
+          <Button
+            type="dashed"
+            icon={<RocketOutlined />}
+            disabled={profiles.length === 0}
+            onClick={() => props.runBatchProfiles && props.runBatchProfiles(profiles)}
+          >
+            Chạy tất cả Profile
+          </Button>
+        </Space>
+      </Flex>
 
       <Row style={{ flex: 1 }} gutter={[24, 24]}>
         {/* LEFT COLUMN: TASK SELECTION */}
         <Col xs={24} md={12}>
           <div style={{ marginBottom: 8, fontWeight: 500, color: '#666' }}>1. Select Task Category</div>
           <Tabs 
-            defaultActiveKey={uniqueCats[0] || 'tree'} 
+            activeKey={activeCatTab}
+            onChange={setActiveCatTab}
             items={items} 
             type="editable-card" 
             hideAdd={false}
@@ -254,6 +470,18 @@ const SkyGarden = (props) => {
                 <div style={{ fontSize: 12, marginBottom: 4 }}>Quantity</div>
                 <InputNumber style={{ width: '100%' }} min={1} max={9999} value={quantity} onChange={setQuantity} />
               </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, marginBottom: 4 }}>Tốc độ riêng (1–3x)</div>
+                <InputNumber
+                  style={{ width: '100%' }}
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  placeholder="Theo chung"
+                  value={speedMultiplierOverride}
+                  onChange={setSpeedMultiplierOverride}
+                />
+              </div>
             </Flex>
           </div>
         </Col>
@@ -261,7 +489,7 @@ const SkyGarden = (props) => {
         {/* RIGHT COLUMN: OPTIONS & ACTIONS */}
         <Col xs={24} md={12}>
           <div style={{ marginBottom: 8, fontWeight: 500, color: '#666' }}>3. Advanced Options</div>
-          <Checkbox.Group style={{ width: '100%' }} onChange={onSelectedGameOption} defaultValue={gameOption}>
+          <Checkbox.Group style={{ width: '100%' }} onChange={onSelectedGameOption} value={gameOption}>
             <Row gutter={[8, 8]}>
               <Col span={12}><Checkbox value="openGame">Open Game</Checkbox></Col>
               <Col span={12}><Checkbox value="openChests">Open Chests</Checkbox></Col>
@@ -428,6 +656,30 @@ const SkyGarden = (props) => {
           onChange={e => setNewCatName(e.target.value)} 
           style={{ marginTop: '16px' }}
         />
+      </Modal>
+
+      <Modal
+        title="Lưu cấu hình thành Profile"
+        open={saveProfileModalOpen}
+        onOk={handleSaveProfile}
+        confirmLoading={savingProfile}
+        onCancel={() => setSaveProfileModalOpen(false)}
+        okText="Lưu"
+        cancelText="Hủy"
+      >
+        <div style={{ marginTop: 12 }}>
+          <div style={{ marginBottom: 6, fontWeight: 500 }}>Tên Profile</div>
+          <Input
+            placeholder="Ví dụ: Acc chính cày đêm"
+            value={profileNameInput}
+            onChange={(e) => setProfileNameInput(e.target.value)}
+            onPressEnter={handleSaveProfile}
+          />
+          <div style={{ marginTop: 8, fontSize: 12, color: '#888' }}>
+            Thiết bị sẽ lưu kèm ({(props.selectedDevices || []).length}): {(props.selectedDevices || []).join(', ') || 'Chưa chọn'}
+            {speedMultiplierOverride ? ` | Tốc độ riêng: ${speedMultiplierOverride}x` : ''}
+          </div>
+        </div>
       </Modal>
     </div>
   )

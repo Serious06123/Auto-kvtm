@@ -6,7 +6,7 @@ cd "$PROJECT_ROOT"
 # Set ADB environment
 export ANDROID_HOME="$PROJECT_ROOT/bin"
 export PATH="$ANDROID_HOME/platform-tools:$PATH"
-export ADB_SERVER_PORT=5037
+# ANDROID_ADB_SERVER_PORT is auto-detected by adb.js starting at 5037
 
 # Setup adb symlink based on OS for Appium compatibility
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -51,6 +51,3 @@ else
 fi
 
 npm run start
-
-# display monitoring information
-npm run monitor

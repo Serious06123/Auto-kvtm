@@ -1,0 +1,7 @@
+{
+    "discordWebhookUrl": "",
+    "telegramBotToken": "",
+    "telegramChatId": "",
+    "relayUrl": "",
+    "cooldownSeconds": 30
+}

@@ -13,7 +13,7 @@ set "CURRENT_DIR=%~dp0"
 for %%i in ("%CURRENT_DIR%..") do set "PROJECT_ROOT=%%~fi"
 set "ANDROID_HOME=%PROJECT_ROOT%\bin"
 set "PATH=%ANDROID_HOME%\platform-tools;%PATH%"
-set ADB_SERVER_PORT=5037
+REM ANDROID_ADB_SERVER_PORT duoc adb.js tu dong chon bat dau tu 5037
 
 REM Kiem tra Java he thong
 java -version >nul 2>&1
@@ -82,5 +82,4 @@ if not "!IS_BUILDED!"=="TRUE" (
 
 call cd ..
 call npm run start
-call npm run monitor
 pause

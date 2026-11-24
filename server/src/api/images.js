@@ -2,6 +2,9 @@ const fs = require('fs')
 const path = require('path')
 const multer = require('multer')
 const Jimp = require('jimp')
+const { invalidateTemplateCache, testMatchCoordinates } = require('../engine/image')
+const { ADBHelper, isValidDeviceId, sanitizeDeviceId } = require('../engine/adb')
+const { readJsonSafe, writeJsonAtomic } = require('../services/data')
 
 const getConstFilePath = () => path.resolve(__dirname, '../games/sky-garden/const.js')
 const getItemFolderPath = () => path.resolve(__dirname, '../games/sky-garden/item')
@@ -27,6 +30,16 @@ const keyTypes = [
     'EventKeys',
     'AchievementKeys',
 ]
+
+const isSafeFileBase = (name) => typeof name === 'string' && /^[a-zA-Z0-9._-]+$/.test(name) && name !== '.' && name !== '..'
+
+const resolveItemPng = (name) => {
+    if (!isSafeFileBase(name)) return null
+    const folder = getItemFolderPath()
+    const resolved = path.resolve(folder, `${name}.png`)
+    if (!resolved.startsWith(folder + path.sep)) return null
+    return resolved
+}
 
 function getImages(req, res) {
     try {
@@ -56,7 +69,8 @@ function viewImage(req, res) {
     const { name } = req.query
     if (!name) return res.status(400).send('Name parameter is required')
 
-    const imagePath = path.resolve(getItemFolderPath(), `${name}.png`)
+    const imagePath = resolveItemPng(name)
+    if (!imagePath) return res.status(400).send('Invalid image name')
     if (fs.existsSync(imagePath)) {
         res.sendFile(imagePath)
     } else {
@@ -66,8 +80,11 @@ function viewImage(req, res) {
 
 function deleteImage(req, res) {
     const { keyType, keyName, value } = req.body
-    if (!keyType || !keyName) {
-        return res.status(400).json({ error: 'keyType and keyName are required' })
+    if (!keyType || !keyName || !keyTypes.includes(keyType)) {
+        return res.status(400).json({ error: 'Valid keyType and keyName are required' })
+    }
+    if (value && !resolveItemPng(value)) {
+        return res.status(400).json({ error: 'Invalid image value' })
     }
 
     try {
@@ -104,9 +121,10 @@ function deleteImage(req, res) {
         delete require.cache[require.resolve('../games/sky-garden/const')]
 
         if (value) {
-            const imagePath = path.resolve(getItemFolderPath(), `${value}.png`)
-            if (fs.existsSync(imagePath)) {
+            const imagePath = resolveItemPng(value)
+            if (imagePath && fs.existsSync(imagePath)) {
                 fs.unlinkSync(imagePath)
+                invalidateTemplateCache(imagePath)
             }
         }
 
@@ -130,6 +148,16 @@ function updateImage(req, res) {
         if (!keyType || !oldKeyName || !newKeyName || !oldValue || !newValue) {
             if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path)
             return res.status(400).json({ error: 'Missing required parameters' })
+        }
+        if (
+            !keyTypes.includes(keyType) ||
+            !resolveItemPng(oldValue) ||
+            !resolveItemPng(newValue) ||
+            /['"\r\n\\]/.test(newKeyName) ||
+            /['"\r\n\\]/.test(newValue)
+        ) {
+            if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path)
+            return res.status(400).json({ error: 'Invalid keyType, keyName, or value' })
         }
 
         try {
@@ -173,9 +201,8 @@ function updateImage(req, res) {
 
             delete require.cache[require.resolve('../games/sky-garden/const')]
 
-            const itemFolder = getItemFolderPath()
-            const oldImagePath = path.resolve(itemFolder, `${oldValue}.png`)
-            const newImagePath = path.resolve(itemFolder, `${newValue}.png`)
+            const oldImagePath = resolveItemPng(oldValue)
+            const newImagePath = resolveItemPng(newValue)
 
             if (req.file) {
                 Jimp.read(req.file.path)
@@ -185,6 +212,8 @@ function updateImage(req, res) {
                             if (oldValue !== newValue && fs.existsSync(oldImagePath)) {
                                 fs.unlinkSync(oldImagePath)
                             }
+                            invalidateTemplateCache(oldImagePath)
+                            invalidateTemplateCache(newImagePath)
                             return res.json({ message: 'Updated and uploaded successfully' })
                         })
                     })
@@ -195,6 +224,8 @@ function updateImage(req, res) {
             } else {
                 if (oldValue !== newValue && fs.existsSync(oldImagePath)) {
                     fs.renameSync(oldImagePath, newImagePath)
+                    invalidateTemplateCache(oldImagePath)
+                    invalidateTemplateCache(newImagePath)
                 }
                 return res.json({ message: 'Updated successfully' })
             }
@@ -205,9 +236,107 @@ function updateImage(req, res) {
     })
 }
 
+async function getDeviceScreenBuffer(deviceId, useLastCapture = true) {
+    const screenDir = path.resolve(__dirname, '../../screen')
+    if (!fs.existsSync(screenDir)) {
+        fs.mkdirSync(screenDir, { recursive: true })
+    }
+    const filePath = path.resolve(screenDir, `${sanitizeDeviceId(deviceId)}.png`)
+    if (!useLastCapture || !fs.existsSync(filePath)) {
+        await ADBHelper.screenCap(deviceId, filePath)
+    }
+    return fs.readFileSync(filePath)
+}
+
+async function cropSaveImage(req, res) {
+    try {
+        const { deviceId, keyType, keyName, value, crop, useLastCapture = true } = req.body || {}
+        if (!isValidDeviceId(deviceId)) {
+            return res.status(400).json({ error: 'Invalid deviceId' })
+        }
+        if (!keyType || !keyTypes.includes(keyType) || !keyName || !value) {
+            return res.status(400).json({ error: 'keyType, keyName and value are required' })
+        }
+        if (/['"\r\n\\]/.test(keyName) || /['"\r\n\\]/.test(value)) {
+            return res.status(400).json({ error: 'Invalid characters in keyName or value' })
+        }
+        const finalPath = resolveItemPng(value)
+        if (!finalPath) {
+            return res.status(400).json({ error: 'Invalid image value' })
+        }
+        if (
+            !crop ||
+            typeof crop.x !== 'number' ||
+            typeof crop.y !== 'number' ||
+            typeof crop.w !== 'number' ||
+            typeof crop.h !== 'number' ||
+            crop.w <= 0 ||
+            crop.h <= 0
+        ) {
+            return res.status(400).json({ error: 'Invalid crop region' })
+        }
+
+        const itemFolder = getItemFolderPath()
+        if (!fs.existsSync(itemFolder)) {
+            fs.mkdirSync(itemFolder, { recursive: true })
+        }
+
+        const screenBuf = await getDeviceScreenBuffer(deviceId, useLastCapture !== false)
+        const image = await Jimp.read(screenBuf)
+        image.resize(1000, 1000)
+
+        const px = Math.max(0, Math.min(999, Math.round(crop.x * 10)))
+        const py = Math.max(0, Math.min(999, Math.round(crop.y * 10)))
+        const pw = Math.max(1, Math.min(1000 - px, Math.round(crop.w * 10)))
+        const ph = Math.max(1, Math.min(1000 - py, Math.round(crop.h * 10)))
+
+        image.crop(px, py, pw, ph)
+        await image.writeAsync(finalPath)
+        invalidateTemplateCache(finalPath)
+
+        const customConstPath = path.resolve(__dirname, '../../../data/custom_const.json')
+        const customData = readJsonSafe(customConstPath, {})
+        if (!customData[keyType]) customData[keyType] = {}
+        customData[keyType][keyName] = value
+        writeJsonAtomic(customConstPath, customData, true)
+
+        delete require.cache[require.resolve('../games/sky-garden/const')]
+
+        res.json({
+            success: true,
+            filename: `${value}.png`,
+            size: { w: pw, h: ph },
+        })
+    } catch (err) {
+        res.status(500).json({ error: err.message })
+    }
+}
+
+async function testMatchImage(req, res) {
+    try {
+        const { deviceId, value, findPosition = null, rate = null, useLastCapture = true } = req.body || {}
+        if (!isValidDeviceId(deviceId)) {
+            return res.status(400).json({ error: 'Invalid deviceId' })
+        }
+        const imagePath = resolveItemPng(value)
+        if (!imagePath || !fs.existsSync(imagePath)) {
+            return res.status(404).json({ error: 'Template image not found' })
+        }
+
+        const screenBuf = await getDeviceScreenBuffer(deviceId, useLastCapture !== false)
+        const parsedRate = rate !== null && rate !== undefined && rate !== '' ? Number(rate) : null
+        const result = await testMatchCoordinates(screenBuf, imagePath, findPosition || null, parsedRate)
+        res.json({ success: true, ...result })
+    } catch (err) {
+        res.status(500).json({ error: err.message })
+    }
+}
+
 module.exports = {
     getImages,
     viewImage,
     deleteImage,
     updateImage,
+    cropSaveImage,
+    testMatchImage,
 }

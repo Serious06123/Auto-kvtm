@@ -4,6 +4,70 @@ const { getAutoData, writeAutoData } = require('../services/data')
 
 const corePath = path.resolve(__dirname, '../games/sky-garden/core.js')
 const constPath = path.resolve(__dirname, '../games/sky-garden/const.js')
+const autoDir = path.resolve(__dirname, '../games/sky-garden/auto')
+
+function isValidAutoKey(key) {
+    return typeof key === 'string' && /^[a-zA-Z0-9_-]+$/.test(key)
+}
+
+function resolveAutoPath(key) {
+    if (!isValidAutoKey(key)) return null
+    const resolved = path.resolve(autoDir, `${key}.js`)
+    if (!resolved.startsWith(autoDir + path.sep)) return null
+    return resolved
+}
+
+function buildAutoContent({ logic = {}, loopCount = 5, sleepSeconds = 0 }) {
+    const lines = []
+    lines.push("const core = require('../core')")
+    lines.push("const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralKeys, OtherKeys, EventKeys, BugKeys } = require('../const')")
+    lines.push('')
+    lines.push('const produceItems = async (driver, isLast, mutex) => {')
+    if (logic.production && Array.isArray(logic.production)) {
+        for (const l of logic.production) {
+            lines.push('  ' + l)
+        }
+    } else if (Array.isArray(logic)) {
+        for (const l of logic) lines.push('  ' + l)
+    }
+    lines.push('  if (!isLast) {')
+    lines.push('    await driver.sleep(' + parseInt(sleepSeconds || 0) + ')')
+    lines.push('  }')
+    lines.push('}')
+    lines.push('')
+
+    const hasSell = logic.sell && Array.isArray(logic.sell) && logic.sell.some(line => line.trim().length > 0)
+    if (hasSell) {
+        lines.push('const sellItems = async (driver, mutex, mutex2, removeItems = false, quantity = 0) => {')
+        lines.push('  // Sell Goods')
+        for (const l of logic.sell) lines.push('  ' + l)
+        lines.push('}')
+        lines.push('')
+    }
+
+    const parsedLoop = parseInt(loopCount || 5)
+    lines.push('// auto generated')
+    lines.push('module.exports = async (driver, gameOptions) => {')
+    lines.push('  const { sellItems: sell } = gameOptions;')
+    lines.push('  const { removeItems: removeItems } = gameOptions;')
+    lines.push('  const { quantity } = gameOptions;')
+    lines.push('  let mutex = { value: 0 };')
+    lines.push('  let mutex2 = { value: 0 };')
+    lines.push(`  for (let i = 0; i < ${parsedLoop}; i++) {`)
+    lines.push('    if (mutex.value != 1) {')
+    lines.push('      await produceItems(driver, i == ' + (parsedLoop - 1) + ', mutex);')
+    lines.push('    } ')
+    lines.push('  }')
+    lines.push('')
+    if (hasSell) {
+        lines.push('  if (sell) {')
+        lines.push('    await sellItems(driver, mutex, mutex2, removeItems, quantity)')
+        lines.push('  }')
+    }
+    lines.push('}')
+
+    return lines.join('\n')
+}
 
 function parseCoreExports() {
     try {
@@ -41,12 +105,13 @@ const readAuto = async (req, res, next) => {
     try {
         const { key } = req.query
         if (!key) return res.status(400).json({ error: 'key required' })
+        const filePath = resolveAutoPath(key)
+        if (!filePath) return res.status(400).json({ error: 'invalid auto key' })
         const data = getAutoData()
         const list = (data['sky-garden'] || [])
         const meta = list.find((x) => x.key === key)
         if (!meta) return res.status(404).json({ error: 'auto not found' })
 
-        const filePath = path.resolve(__dirname, '../games/sky-garden/auto', `${key}.js`)
         if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'file not found' })
         const txt = fs.readFileSync(filePath, 'utf8')
 
@@ -97,69 +162,25 @@ const readAuto = async (req, res, next) => {
 const createAuto = async (req, res, next) => {
     try {
         const payload = req.body
-        const { name, key, category = 'vp', logic = {}, loopCount = 5, sleepSeconds = 0, sellItems = false, removeItems = false } = payload
+        const { name, key, category = 'vp', logic = {}, loopCount = 5, sleepSeconds = 0 } = payload
 
         if (!name || !key) return res.status(400).json({ error: 'name and key required' })
+        const filePath = resolveAutoPath(key)
+        if (!filePath) return res.status(400).json({ error: 'invalid auto key (only a-z, A-Z, 0-9, -, _ allowed)' })
 
-        // build file content
-        const lines = []
-        lines.push("const core = require('../core')")
-        lines.push("const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralKeys, OtherKeys, EventKeys, BugKeys } = require('../const')")
-        lines.push('')
-        lines.push('const produceItems = async (driver, isLast, mutex) => {')
-        if (logic.production && Array.isArray(logic.production)) {
-            for (const l of logic.production) {
-                lines.push('  ' + l)
-            }
-        } else if (Array.isArray(logic)) {
-            for (const l of logic) lines.push('  ' + l)
-        }
-        lines.push('  if (!isLast) {')
-        lines.push('    await driver.sleep(' + parseInt(sleepSeconds || 0) + ')')
-        lines.push('  }')
-        lines.push('}')
-        lines.push('')
-
-        const hasSell = logic.sell && Array.isArray(logic.sell) && logic.sell.some(line => line.trim().length > 0)
-        if (hasSell) {
-            lines.push('const sellItems = async (driver, mutex, mutex2, removeItems = false, quantity = 0) => {')
-            lines.push('  // Sell Goods')
-            for (const l of logic.sell) lines.push('  ' + l)
-            lines.push('}')
-            lines.push('')
-        }
-
-        lines.push('// auto generated')
-        lines.push('module.exports = async (driver, gameOptions) => {')
-        lines.push('  const { sellItems: sell } = gameOptions;')
-        lines.push('  const { removeItems: removeItems } = gameOptions;')
-        lines.push('  const { quantity } = gameOptions;')
-        lines.push('  let mutex = { value: 0 };')
-        lines.push('  let mutex2 = { value: 0 };')
-        lines.push(`  for (let i = 0; i < ${parseInt(loopCount || 5)}; i++) {`)
-        lines.push("    if (mutex.value != 1) {")
-        lines.push('      await produceItems(driver, i == ' + (parseInt(loopCount || 5) - 1) + ', mutex);')
-        lines.push('    } ')
-        lines.push('  }')
-        lines.push('')
-        if (hasSell) {
-            lines.push('  if (sell) {')
-            lines.push('    await sellItems(driver, mutex, mutex2, removeItems, quantity)')
-            lines.push('  }')
-        }
-        lines.push('}')
-
-        const content = lines.join('\n')
-
-        // write file
-        const targetDir = path.resolve(__dirname, '../games/sky-garden/auto')
-        if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true })
-        const filePath = path.resolve(targetDir, `${key}.js`)
-        fs.writeFileSync(filePath, content)
-
-        // update data/auto.json
         let data = getAutoData()
         if (!data['sky-garden']) data['sky-garden'] = []
+        if (data['sky-garden'].some((x) => x.key === key)) {
+            return res.status(409).json({ error: 'auto key already exists' })
+        }
+
+        const content = buildAutoContent({ logic, loopCount, sleepSeconds })
+
+        // write file
+        if (!fs.existsSync(autoDir)) fs.mkdirSync(autoDir, { recursive: true })
+        fs.writeFileSync(filePath, content)
+
+        // update data/auto_user.json
         data['sky-garden'].push({ key, name, disabled: false, order: 0, recommend: false, category })
         writeAutoData(data)
 
@@ -173,16 +194,17 @@ const createAuto = async (req, res, next) => {
 const updateAuto = async (req, res, next) => {
     try {
         const payload = req.body
-        const { name, key, category = 'vp', order = 0, recommend = false, logic = {}, loopCount = 5, sleepSeconds = 0, sellItems = false, removeItems = false } = payload
+        const { name, key, category = 'vp', order = 0, recommend = false, logic = {}, loopCount = 5, sleepSeconds = 0 } = payload
 
         if (!name || !key) return res.status(400).json({ error: 'name and key required' })
+        const filePath = resolveAutoPath(key)
+        if (!filePath) return res.status(400).json({ error: 'invalid auto key (only a-z, A-Z, 0-9, -, _ allowed)' })
 
         // if sell logic not provided in payload, try to preserve existing sell logic
         if (logic.sell === undefined) {
             try {
-                const existingPath = path.resolve(__dirname, '../games/sky-garden/auto', `${key}.js`)
-                if (fs.existsSync(existingPath)) {
-                    const existingTxt = fs.readFileSync(existingPath, 'utf8')
+                if (fs.existsSync(filePath)) {
+                    const existingTxt = fs.readFileSync(filePath, 'utf8')
                     const sellMatch = existingTxt.match(/const sellItems\s*=\s*async[^\{]*\{([\s\S]*?)\}/m)
                     if (sellMatch && sellMatch[1]) {
                         logic.sell = sellMatch[1].split('\n').map((l) => l.replace(/^\s+|\s+$/g, '')).filter((l) => l && !l.startsWith('//'))
@@ -193,63 +215,13 @@ const updateAuto = async (req, res, next) => {
             }
         }
 
-        // build file content (same as create)
-        const lines = []
-        lines.push("const core = require('../core')")
-        lines.push("const { SellItemOptions, ProductKeys, TreeKeys, ProductTreeKeys, ProductMineralKeys, OtherKeys, EventKeys, BugKeys } = require('../const')")
-        lines.push('')
-        lines.push('const produceItems = async (driver, isLast, mutex) => {')
-        if (logic.production && Array.isArray(logic.production)) {
-            for (const l of logic.production) {
-                lines.push('  ' + l)
-            }
-        } else if (Array.isArray(logic)) {
-            for (const l of logic) lines.push('  ' + l)
-        }
-        lines.push('  if (!isLast) {')
-        lines.push('    await driver.sleep(' + parseInt(sleepSeconds || 0) + ')')
-        lines.push('  }')
-        lines.push('}')
-        lines.push('')
-
-        const hasSell = logic.sell && Array.isArray(logic.sell) && logic.sell.some(line => line.trim().length > 0)
-        if (hasSell) {
-            lines.push('const sellItems = async (driver, mutex, mutex2, removeItems = false, quantity = 0) => {')
-            lines.push('  // Sell Goods')
-            for (const l of logic.sell) lines.push('  ' + l)
-            lines.push('}')
-            lines.push('')
-        }
-
-        lines.push('// auto generated')
-        lines.push('module.exports = async (driver, gameOptions) => {')
-        lines.push('  const { sellItems: sell } = gameOptions;')
-        lines.push('  const { removeItems: removeItems } = gameOptions;')
-        lines.push('  const { quantity } = gameOptions;')
-        lines.push('  let mutex = { value: 0 };')
-        lines.push('  let mutex2 = { value: 0 };')
-        lines.push(`  for (let i = 0; i < ${parseInt(loopCount || 5)}; i++) {`)
-        lines.push("    if (mutex.value != 1) {")
-        lines.push('      await produceItems(driver, i == ' + (parseInt(loopCount || 5) - 1) + ', mutex);')
-        lines.push('    } ')
-        lines.push('  }')
-        lines.push('')
-        if (hasSell) {
-            lines.push('  if (sell) {')
-            lines.push('    await sellItems(driver, mutex, mutex2, removeItems, quantity)')
-            lines.push('  }')
-        }
-        lines.push('}')
-
-        const content = lines.join('\n')
+        const content = buildAutoContent({ logic, loopCount, sleepSeconds })
 
         // write file (overwrite)
-        const targetDir = path.resolve(__dirname, '../games/sky-garden/auto')
-        if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true })
-        const filePath = path.resolve(targetDir, `${key}.js`)
+        if (!fs.existsSync(autoDir)) fs.mkdirSync(autoDir, { recursive: true })
         fs.writeFileSync(filePath, content)
 
-        // update data/auto.json (find by key and update fields)
+        // update data/auto_user.json (find by key and update fields)
         let data = getAutoData()
         if (!data['sky-garden']) data['sky-garden'] = []
         const idx = data['sky-garden'].findIndex((x) => x.key === key)

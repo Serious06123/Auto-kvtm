@@ -1,0 +1,86 @@
+[
+    {
+        "id": "adb-no-device",
+        "category": "Cài đặt & Kết nối",
+        "question": "Không thấy giả lập hiện trong danh sách thiết bị hoặc ADB báo offline?",
+        "answer": "1. Mở cài đặt của giả lập (LDPlayer / BlueStacks / Nox / MuMu) và bật ADB Debugging.\n2. Chờ vài giây hoặc khởi động lại giả lập, sau đó kiểm tra thanh trạng thái hệ thống (Health Bar) trên Header xem mục ADB đã hiển thị số thiết bị online chưa.\n3. Nếu dùng nhiều phần mềm giả lập cùng lúc gây đụng cổng 5037, tool tự dò các cổng ADB 5037–5045 hoặc chạy qua biến ANDROID_ADB_SERVER_PORT.",
+        "tags": ["adb", "offline", "thiết bị", "giả lập", "kết nối"]
+    },
+    {
+        "id": "appium-session-error",
+        "category": "Cài đặt & Kết nối",
+        "question": "Báo lỗi kết nối Appium hoặc đang chạy bị văng session thì xử lý thế nào?",
+        "answer": "1. Kiểm tra badge Appium trên thanh Health Bar xem có sáng xanh không (đảm bảo đã khởi động bằng npm start hoặc script exec/windows.bat).\n2. Trong nút Tham số -> nhóm Watchdog, bật watchdog.enabled = true (mặc định đang bật). Khi mất session Appium hoặc đứng yên quá maxIdleMinutes (mặc định 20 phút), Watchdog sẽ tự hủy session cũ, kết nối lại Appium và mở lại game để tiếp tục chạy.",
+        "tags": ["appium", "session", "watchdog", "mất kết nối", "khôi phục"]
+    },
+    {
+        "id": "ocr-server-setup",
+        "category": "Cài đặt & Kết nối",
+        "question": "OCR đọc số lượng kho bị lỗi hoặc không thấy server Python OCR hoạt động?",
+        "answer": "1. Kiểm tra badge Python OCR trên Header (kiểm tra http://127.0.0.1:5000/ping).\n2. Nếu lần đầu dùng tính năng đọc số kho/vàng, vào phần kiểm tra AI/OCR trong giao diện để cài đặt môi trường Python OCR hoặc kiểm tra log tại log/err.txt và ocr_server.log.\n3. Có thể điều chỉnh số vòng chờ khởi động OCR trong Tham số -> nhóm ocr (ocr.startupWaitLoops).",
+        "tags": ["ocr", "python", "ai", "đọc kho", "5000"]
+    },
+    {
+        "id": "night-sell-stall",
+        "category": "Treo đêm & Bán hàng",
+        "question": "Treo ban đêm bán đồ không ai mua hoặc game lag không hiện ô đã bán thì làm sao hết kẹt?",
+        "answer": "Auto đã có cơ chế chống kẹt bán hàng 2 cấp ban đêm (nằm trong Tham số -> nhóm sell):\n- Nghỉ khi quầy đầy (sell.idleWaitWhenFull, mặc định 5s) để tránh quét ảnh liên tục gây nóng máy.\n- Cấp 1: Sau sell.softRefreshCycles chu kỳ quét trống (mặc định 4), tool tự đóng bảng quầy rồi mở lại để đồng bộ hiển thị.\n- Cấp 2: Nếu quá sell.staleRestartMinutes phút (mặc định 120 phút = 2 tiếng) vẫn chưa bán thêm được món nào, tool tự thoát game vào lại rồi bán tiếp và vẫn giữ nguyên số lượng món còn lại (itemId/items/cnt không bị mất).\n- Bạn có thể bấm Stop bất cứ lúc nào, vòng chờ nghỉ ban đêm sẽ thoát nhanh thay vì treo hết chu kỳ.",
+        "tags": ["treo đêm", "bán đồ", "kẹt quầy", "sell", "restart"]
+    },
+    {
+        "id": "pause-vs-graceful-stop",
+        "category": "Treo đêm & Bán hàng",
+        "question": "Khác nhau giữa Tạm dừng, Dừng mềm và Stop là gì?",
+        "answer": "- Stop: Yêu cầu dừng ngay lập tức và đóng session Appium hiện tại.\n- Tạm dừng / Tiếp tục: Tạm dừng tại điểm nghỉ (sleep) an toàn mà vẫn giữ nguyên session và tiến độ vòng hiện tại, bấm Tiếp tục sẽ chạy tiếp.\n- Dừng mềm: Cho phép auto chạy hết vòng lặp hiện tại rồi mới tự động dừng sạch sẽ, tránh dừng ngang giữa lúc đang thu hoạch hoặc bán hàng.",
+        "tags": ["tạm dừng", "dừng mềm", "stop", "pause", "graceful"]
+    },
+    {
+        "id": "right-click-coords",
+        "category": "Nhận diện ảnh & Tạo Auto",
+        "question": "Làm sao lấy nhanh tọa độ điểm cần bấm trên màn hình giả lập?",
+        "answer": "Bạn có 2 cách:\n1. Mở nút \"Chụp, Cắt & Test ảnh mẫu\" trong phần Quản lý ảnh mẫu → chọn thiết bị → Chụp màn hình → ấn chuột phải vào đúng vị trí cần bấm.\n2. Hoặc khi đang chạy thiết bị ở bảng danh sách, mở xem màn hình chụp (ImageScreen) và ấn chuột phải trực tiếp lên ảnh.\n\nKhung tọa độ sẽ hiện đồng thời tọa độ % (dùng cho driver.tap(x, y)), tọa độ chuẩn 1000x1000 (OpenCV), pixel gốc kèm nút Copy nhanh và nút Chạm thử lên giả lập.",
+        "tags": ["tọa độ", "chuột phải", "driver.tap", "chạm thử", "crop"]
+    },
+    {
+        "id": "crop-and-test-opencv",
+        "category": "Nhận diện ảnh & Tạo Auto",
+        "question": "Ảnh mẫu nhận diện sai hoặc không tìm thấy vật phẩm trên màn hình thì chỉnh sao?",
+        "answer": "1. Dùng công cụ \"Chụp, Cắt & Test ảnh mẫu\": chọn thiết bị → Chụp màn hình → kéo chuột trái cắt sát phần icon đặc trưng (tránh lấy nền thay đổi nhiều) để lưu thành ảnh mẫu mới.\n2. Ở cột \"Test khớp OpenCV trên ảnh chụp\", chọn ảnh mẫu, vùng tìm kiếm (ROI) và ngưỡng độ khớp (rate, mặc định 0.85) rồi bấm Test nhận diện để xem điểm khớp thực tế (Best Score) trước khi cho chạy Auto.\n3. Khi cập nhật ảnh qua Web UI, bộ nhớ đệm template RAM tự động được làm mới ngay.",
+        "tags": ["opencv", "ảnh mẫu", "test nhận diện", "score", "cắt ảnh"]
+    },
+    {
+        "id": "speed-multiplier-vs-profile",
+        "category": "Profile, Hẹn giờ & Thông báo",
+        "question": "Làm sao chạy nhiều giả lập với tốc độ hoặc kịch bản khác nhau?",
+        "answer": "Trong khu vực Bộ lọc & Khởi chạy Auto, bạn có thể lưu thành từng Profile (Preset) riêng cho mỗi thiết bị (gồm game, loại auto, tùy chọn game và speedMultiplierOverride riêng cho thiết bị đó). Các lựa chọn gần nhất cũng tự nhớ qua localStorage khi F5. Nút \"Chạy tất cả Profile\" cho phép khởi chạy tuần tự các Profile không trùng thiết bị.",
+        "tags": ["profile", "preset", "nhiều giả lập", "tốc độ", "speedMultiplier"]
+    },
+    {
+        "id": "scheduler-and-playlist",
+        "category": "Profile, Hẹn giờ & Thông báo",
+        "question": "Hẹn giờ (Scheduler) và Chuỗi Auto (Playlist) hoạt động như thế nào?",
+        "answer": "- Chuỗi Auto (Playlist): Cho phép ghép nhiều bước Auto chạy nối tiếp nhau theo số vòng (maxLoops) hoặc thời lượng phút (durationMinutes) trên một thiết bị.\n- Hẹn giờ (Scheduler): Mở nút \"Hẹn giờ / Chuỗi\" trên Header để đặt khung giờ HH:mm chạy hằng ngày (ví dụ 00:05 chạy vòng quay/cú, 23:00 dừng auto cũ và chuyển sang Profile hoặc Auto treo đêm).",
+        "tags": ["hẹn giờ", "scheduler", "playlist", "chuỗi auto", "tự động"]
+    },
+    {
+        "id": "telegram-discord-notify",
+        "category": "Profile, Hẹn giờ & Thông báo",
+        "question": "Cấu hình nhận cảnh báo qua Telegram / Discord khi treo máy ở đâu?",
+        "answer": "Bấm nút \"Thông báo\" trên Header để nhập Telegram Bot Token + Chat ID hoặc Discord Webhook URL, chọn các sự kiện muốn nhận (thiết bị offline, Watchdog phục hồi/thất bại, kẹt bán hàng, OCR lỗi, hoàn thành lượt chạy) và bấm \"Gửi thử thông báo\" để kiểm tra kết nối.",
+        "tags": ["telegram", "discord", "thông báo", "webhook", "cảnh báo"]
+    },
+    {
+        "id": "backup-and-restore",
+        "category": "Profile, Hẹn giờ & Thông báo",
+        "question": "Khi đổi máy hoặc cập nhật tool, sao lưu toàn bộ cấu hình và ảnh mẫu tự thêm bằng cách nào?",
+        "answer": "Bấm nút \"Thống kê & Backup\" trên Header → mục Sao lưu / Khôi phục để tải về file JSON bundle (bao gồm tham số cá nhân, danh mục/auto tự tạo, Profile, lịch sử hằng số tùy chỉnh và ảnh mẫu tự thêm). Khi sang máy mới chỉ cần chọn khôi phục từ file JSON đó.",
+        "tags": ["backup", "restore", "sao lưu", "khôi phục", "chuyển máy"]
+    },
+    {
+        "id": "feedback-discord-telegram",
+        "category": "Profile, Hẹn giờ & Thông báo",
+        "question": "Báo cáo lỗi / Đề xuất Auto được gửi đi như thế nào, có lộ thông tin hay token không?",
+        "answer": "Mặc định tool đã nối sẵn kênh tiếp nhận an toàn qua Cloudflare Worker (ẩn hoàn toàn Webhook Discord / Token Telegram của tác giả). Nội dung log lỗi gửi kèm sẽ tự động che token và URL webhook nhạy cảm trước khi gửi. Nhà phát triển có thể cấu hình kênh riêng trong data/feedback_config.json (copy từ data/feedback_config.example.json) hoặc biến môi trường FEEDBACK_DISCORD_WEBHOOK / FEEDBACK_TELEGRAM_BOT_TOKEN + FEEDBACK_TELEGRAM_CHAT_ID / FEEDBACK_RELAY_URL.",
+        "tags": ["báo lỗi", "đề xuất", "feedback", "discord", "telegram", "cloudflare"]
+    }
+]

@@ -1,10 +1,17 @@
 const moment = require('moment')
 import React, { useState, useEffect } from 'react'
-import { Layout, ConfigProvider, notification, Button, Modal, Timeline, Space } from 'antd'
+import { Layout, ConfigProvider, notification, Button, Modal, Timeline, Space, Dropdown } from 'antd'
 const { Header, Content, Footer } = Layout
-import { SyncOutlined, HistoryOutlined } from '@ant-design/icons'
+import { SyncOutlined, HistoryOutlined, SettingOutlined, BellOutlined, ScheduleOutlined, BarChartOutlined, QuestionCircleOutlined, AppstoreOutlined, DownOutlined, FileTextOutlined } from '@ant-design/icons'
 import axios from 'axios'
 import * as styles from './App.module.css'
+import ParamsDrawer from './component/ParamsDrawer'
+import HealthBar from './component/HealthBar'
+import NotifyModal from './component/NotifyModal'
+import SchedulerDrawer from './component/SchedulerDrawer'
+import StatsModal from './component/StatsModal'
+import SupportModal from './component/SupportModal'
+import ActivityLogModal from './component/ActivityLogModal'
 
 import Filter from './component/Filter/Filter'
 import Table from './component/Content/Table'
@@ -18,6 +25,18 @@ const App = (props) => {
     const [updating, setUpdating] = useState(false)
     const [changelogVisible, setChangelogVisible] = useState(false)
     const [changelogData, setChangelogData] = useState([])
+    const [paramsVisible, setParamsVisible] = useState(false)
+    const [notifyVisible, setNotifyVisible] = useState(false)
+    const [schedulerVisible, setSchedulerVisible] = useState(false)
+    const [statsVisible, setStatsVisible] = useState(false)
+    const [supportVisible, setSupportVisible] = useState(false)
+    const [activityLogVisible, setActivityLogVisible] = useState(false)
+    const [activityLogDeviceId, setActivityLogDeviceId] = useState('')
+
+    const openActivityLog = (deviceId = '') => {
+        setActivityLogDeviceId(deviceId || '')
+        setActivityLogVisible(true)
+    }
 
     const showChangelog = async () => {
         setChangelogVisible(true)
@@ -174,6 +193,46 @@ const App = (props) => {
         handleCheckUpdate(false)
     }, [])
 
+    const utilityMenuItems = [
+        {
+            key: 'activityLogs',
+            icon: <FileTextOutlined />,
+            label: 'Lịch sử hoạt động (Log)',
+            onClick: () => openActivityLog(''),
+        },
+        {
+            key: 'scheduler',
+            icon: <ScheduleOutlined />,
+            label: 'Hẹn giờ / Chuỗi',
+            onClick: () => setSchedulerVisible(true),
+        },
+        {
+            key: 'stats',
+            icon: <BarChartOutlined />,
+            label: 'Thống kê & Backup',
+            onClick: () => setStatsVisible(true),
+        },
+        {
+            key: 'notify',
+            icon: <BellOutlined />,
+            label: 'Thông báo Telegram / Discord',
+            onClick: () => setNotifyVisible(true),
+        },
+        { type: 'divider' },
+        {
+            key: 'changelog',
+            icon: <HistoryOutlined />,
+            label: 'Nhật ký cập nhật',
+            onClick: showChangelog,
+        },
+        {
+            key: 'update',
+            icon: <SyncOutlined />,
+            label: 'Kiểm tra cập nhật',
+            onClick: () => handleCheckUpdate(true),
+        },
+    ]
+
     return (
         <ConfigProvider
             theme={{
@@ -200,32 +259,41 @@ const App = (props) => {
                             <h1 className={styles.title}>Auto Tools</h1>
                             <span className={styles.subtitle}>Manager</span>
                         </div>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <Button 
-                                type="dashed" 
-                                size="small" 
-                                icon={<HistoryOutlined />} 
-                                onClick={showChangelog}
+                        <HealthBar />
+                        <Space wrap size="small">
+                            <Dropdown menu={{ items: utilityMenuItems }} trigger={['click']}>
+                                <Button type="default" size="small" icon={<AppstoreOutlined />}>
+                                    Tiện ích <DownOutlined />
+                                </Button>
+                            </Dropdown>
+                            <Button
+                                type="primary"
+                                size="small"
+                                icon={<SettingOutlined />}
+                                onClick={() => setParamsVisible(true)}
                             >
-                                Nhật ký cập nhật
+                                Tham số
                             </Button>
-                            <Button 
-                                type="dashed" 
-                                size="small" 
-                                icon={<SyncOutlined />} 
-                                onClick={() => handleCheckUpdate(true)}
-                                title="Vào kho xem có bản Update nào không"
+                            <Button
+                                type="default"
+                                size="small"
+                                icon={<QuestionCircleOutlined />}
+                                onClick={() => setSupportVisible(true)}
                             >
-                                Kiểm tra cập nhật
+                                Hỗ trợ / Góp ý
                             </Button>
-                        </div>
+                        </Space>
                     </div>
                 </Header>
                 <Content className={styles.content}>
                     <div className={styles.container}>
                         <Filter refreshTime={refreshTime} setRefreshTime={setRefreshTime} />
                         <div style={{ marginTop: 24 }}>
-                            <Table refreshTime={refreshTime} setRefreshTime={setRefreshTime} />
+                            <Table
+                                refreshTime={refreshTime}
+                                setRefreshTime={setRefreshTime}
+                                onOpenHistory={(deviceId) => openActivityLog(deviceId)}
+                            />
                         </div>
                         <div style={{ marginTop: 24 }}>
                             <UploadImage />
@@ -275,6 +343,20 @@ const App = (props) => {
                     )}
                 </div>
             </Modal>
+            <ParamsDrawer open={paramsVisible} onClose={() => setParamsVisible(false)} />
+            <NotifyModal open={notifyVisible} onClose={() => setNotifyVisible(false)} />
+            <SchedulerDrawer
+                open={schedulerVisible}
+                onClose={() => setSchedulerVisible(false)}
+                onStarted={() => setRefreshTime(moment().format('LTS'))}
+            />
+            <StatsModal open={statsVisible} onClose={() => setStatsVisible(false)} />
+            <SupportModal open={supportVisible} onClose={() => setSupportVisible(false)} />
+            <ActivityLogModal
+                open={activityLogVisible}
+                initialDeviceId={activityLogDeviceId}
+                onClose={() => setActivityLogVisible(false)}
+            />
         </ConfigProvider>
     )
 }

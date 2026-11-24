@@ -16,3 +16,11 @@ jdk_portable/
 data/auto_user.json
 data/custom_categories.json
 data/custom_const.json
+data/params_user.json
+data/profiles.json
+data/notify_user.json
+data/scheduler.json
+data/stats.json
+data/feedback_config.json
+data/activity_logs.json
+server/screen/

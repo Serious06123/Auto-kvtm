@@ -1,6 +1,35 @@
-const { spawn, exec } = require('child_process')
+const { spawn, exec, execFile } = require('child_process')
 const { logErrMsg } = require('../services/log')
 const Promise = require('bluebird')
+
+function runExecFileAsync(file, args = [], options = {}) {
+    return new Promise((resolve, reject) => {
+        execFile(file, args, options, (err, stdout, stderr) => {
+            if (typeof stderr === 'string' && stderr.trim().length > 0 && options.encoding !== 'buffer') {
+                logErrMsg(stderr)
+            }
+            if (err) {
+                logErrMsg(err.message)
+                return reject(err)
+            }
+            resolve(stdout)
+        })
+    })
+}
+
+function runSpawnArgs(file, args = [], errorHandler = null, exitHandler = null) {
+    const childProcess = spawn(file, args)
+
+    childProcess.stderr.on('data', function (data) {
+        errorHandler ? errorHandler(data) : logErrMsg(data)
+    })
+
+    childProcess.on('close', function (code, signal) {
+        exitHandler && exitHandler(code, signal)
+    })
+
+    return childProcess
+}
 
 function runExecAsync(command) {
     return new Promise((resolve, reject) => {
@@ -65,4 +94,6 @@ module.exports = {
     runExec,
     runSpawn,
     runExecAsync,
+    runExecFileAsync,
+    runSpawnArgs,
 }

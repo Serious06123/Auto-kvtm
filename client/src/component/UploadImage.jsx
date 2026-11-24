@@ -1,7 +1,25 @@
-import React, { useState, useEffect } from 'react'
-import { Button, Input, Select, Upload, message, Form, Modal, Table, Popconfirm, Space, Tag, Image } from 'antd'
-import { UploadOutlined, PlusOutlined, EditOutlined, DeleteOutlined, FileImageOutlined } from '@ant-design/icons'
+import React, { useState, useEffect, useRef } from 'react'
+import { Button, Input, InputNumber, Select, Upload, message, Form, Modal, Table, Popconfirm, Space, Tag, Image, Row, Col, Card } from 'antd'
+import { UploadOutlined, PlusOutlined, EditOutlined, DeleteOutlined, FileImageOutlined, ScissorOutlined, CameraOutlined, AimOutlined } from '@ant-design/icons'
 import axios from 'axios'
+import { computeScreenPoint, CrosshairMarker, ScreenPointPanel } from './ScreenPointOverlay'
+
+const ROI_OPTIONS = [
+    { value: '', label: 'Toàn màn hình' },
+    { value: '1', label: 'Góc phần tư 1 (trên-trái)' },
+    { value: '2', label: 'Góc phần tư 2 (trên-phải)' },
+    { value: '3', label: 'Góc phần tư 3 (dưới-trái)' },
+    { value: '4', label: 'Góc phần tư 4 (dưới-phải)' },
+    { value: '12', label: 'Nửa trên (12)' },
+    { value: '34', label: 'Nửa dưới (34)' },
+    { value: 'caytrong', label: 'Vùng cây trồng' },
+    { value: 'thuhoach', label: 'Vùng giỏ thu hoạch' },
+    { value: 'quayhang', label: 'Vùng quầy hàng' },
+    { value: 'bando', label: 'Vùng bán đồ' },
+    { value: 'batbo', label: 'Vùng bắt bọ' },
+    { value: 'giaohangcu', label: 'Vùng giao hàng cú' },
+    { value: 'kimcuongcu', label: 'Vùng nút giao cú' },
+]
 
 const { Option } = Select
 
@@ -18,6 +36,27 @@ const UploadImage = () => {
     const [editValue, setEditValue] = useState('')
     const [editFileList, setEditFileList] = useState([])
     const [editLoading, setEditLoading] = useState(false)
+
+    // Crop & Test Match Modal State
+    const [cropModalOpen, setCropModalOpen] = useState(false)
+    const [devicesList, setDevicesList] = useState([])
+    const [cropDeviceId, setCropDeviceId] = useState('')
+    const [screenUrl, setScreenUrl] = useState('')
+    const [capturing, setCapturing] = useState(false)
+    const [cropRect, setCropRect] = useState(null)
+    const [dragStart, setDragStart] = useState(null)
+    const [cropKeyType, setCropKeyType] = useState('ItemKeys')
+    const [cropKeyName, setCropKeyName] = useState('')
+    const [cropValue, setCropValue] = useState('')
+    const [cropSaving, setCropSaving] = useState(false)
+    const [testTemplateValue, setTestTemplateValue] = useState('')
+    const [testPosition, setTestPosition] = useState('')
+    const [testRate, setTestRate] = useState(0.85)
+    const [testLoading, setTestLoading] = useState(false)
+    const [testResult, setTestResult] = useState(null)
+    const [pickedPoint, setPickedPoint] = useState(null)
+    const imgContainerRef = useRef(null)
+    const imgRef = useRef(null)
 
     const fetchImages = async () => {
         setTableLoading(true)
@@ -127,6 +166,130 @@ const UploadImage = () => {
         }
     }
 
+    const openCropModal = async () => {
+        setCropModalOpen(true)
+        try {
+            const { data } = await axios.get('/api/settings')
+            const list = data?.listDevices || []
+            setDevicesList(list)
+            if (!cropDeviceId && list.length > 0) {
+                setCropDeviceId(list[0].value)
+            }
+        } catch (err) {
+            message.error('Không lấy được danh sách thiết bị: ' + err.message)
+        }
+    }
+
+    const handleCaptureScreen = async () => {
+        if (!cropDeviceId) return message.warning('Vui lòng chọn thiết bị')
+        setCapturing(true)
+        setTestResult(null)
+        try {
+            const res = await axios.get(`/api/viewDevice?device=${encodeURIComponent(cropDeviceId)}&t=${Date.now()}`, {
+                responseType: 'blob',
+            })
+            if (screenUrl) URL.revokeObjectURL(screenUrl)
+            setScreenUrl(URL.createObjectURL(res.data))
+            setCropRect(null)
+            setPickedPoint(null)
+        } catch (err) {
+            message.error('Chụp màn hình thất bại: ' + (err.response?.data?.error || err.message))
+        } finally {
+            setCapturing(false)
+        }
+    }
+
+    const getRelPercent = (clientX, clientY) => {
+        const el = imgRef.current || imgContainerRef.current
+        if (!el) return { x: 0, y: 0 }
+        const rect = el.getBoundingClientRect()
+        const x = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100))
+        const y = Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100))
+        return { x, y }
+    }
+
+    const handleMouseDown = (e) => {
+        if (!screenUrl || e.button !== 0) return
+        e.preventDefault()
+        const pt = getRelPercent(e.clientX, e.clientY)
+        setDragStart(pt)
+        setCropRect({ x: pt.x, y: pt.y, w: 0, h: 0 })
+    }
+
+    const handleContextMenu = (e) => {
+        if (!screenUrl) return
+        e.preventDefault()
+        const pt = computeScreenPoint(imgRef.current || imgContainerRef.current, e.clientX, e.clientY)
+        if (pt) {
+            setPickedPoint(pt)
+        }
+    }
+
+    const handleMouseMove = (e) => {
+        if (!dragStart) return
+        const pt = getRelPercent(e.clientX, e.clientY)
+        setCropRect({
+            x: Math.min(dragStart.x, pt.x),
+            y: Math.min(dragStart.y, pt.y),
+            w: Math.abs(pt.x - dragStart.x),
+            h: Math.abs(pt.y - dragStart.y),
+        })
+    }
+
+    const handleMouseUp = () => {
+        if (dragStart) setDragStart(null)
+    }
+
+    const handleCropSave = async () => {
+        if (!cropDeviceId || !screenUrl) return message.warning('Vui lòng chụp màn hình thiết bị trước')
+        if (!cropRect || cropRect.w < 0.5 || cropRect.h < 0.5) return message.warning('Vui lòng kéo chuột chọn vùng ảnh cần cắt')
+        if (!cropKeyName || !cropValue) return message.warning('Vui lòng nhập Key Name và Value')
+        setCropSaving(true)
+        try {
+            const { data } = await axios.post('/api/images/cropSave', {
+                deviceId: cropDeviceId,
+                keyType: cropKeyType,
+                keyName: cropKeyName,
+                value: cropValue,
+                crop: cropRect,
+                useLastCapture: true,
+            })
+            message.success(`Đã cắt và lưu ${data.filename} (${data.size.w}x${data.size.h}px)`)
+            setCropKeyName('')
+            setCropValue('')
+            fetchImages()
+        } catch (err) {
+            message.error('Lưu ảnh cắt thất bại: ' + (err.response?.data?.error || err.message))
+        } finally {
+            setCropSaving(false)
+        }
+    }
+
+    const handleTestMatch = async () => {
+        if (!cropDeviceId || !screenUrl) return message.warning('Vui lòng chụp màn hình thiết bị trước')
+        if (!testTemplateValue) return message.warning('Vui lòng chọn ảnh mẫu cần test')
+        setTestLoading(true)
+        try {
+            const { data } = await axios.post('/api/images/testMatch', {
+                deviceId: cropDeviceId,
+                value: testTemplateValue,
+                findPosition: testPosition || null,
+                rate: testRate,
+                useLastCapture: true,
+            })
+            setTestResult(data)
+            if (data.matches?.length > 0) {
+                message.success(`Tìm thấy ${data.matches.length} vị trí khớp (Max score: ${data.bestScore})`)
+            } else {
+                message.info(`Không đạt ngưỡng ${data.threshold} (Best score: ${data.bestScore})`)
+            }
+        } catch (err) {
+            message.error('Test nhận diện thất bại: ' + (err.response?.data?.error || err.message))
+        } finally {
+            setTestLoading(false)
+        }
+    }
+
     const columns = [
         {
             title: 'Key Type',
@@ -227,9 +390,14 @@ const UploadImage = () => {
                     <FileImageOutlined style={{ fontSize: '20px', color: '#1890ff' }} />
                     <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>Game Templates / Images Manager</h3>
                 </div>
-                <Button type="primary" onClick={showModal} icon={<PlusOutlined />}>
-                    Add New Image
-                </Button>
+                <Space>
+                    <Button icon={<ScissorOutlined />} onClick={openCropModal}>
+                        Chụp & Cắt / Test khớp
+                    </Button>
+                    <Button type="primary" onClick={showModal} icon={<PlusOutlined />}>
+                        Add New Image
+                    </Button>
+                </Space>
             </div>
 
             <Table 
@@ -339,6 +507,196 @@ const UploadImage = () => {
                         </Upload>
                     </Form.Item>
                 </Form>
+            </Modal>
+
+            {/* Interactive Crop & OpenCV Match Test Modal */}
+            <Modal
+                title="Chụp màn hình, Cắt ảnh mẫu & Test khớp OpenCV"
+                open={cropModalOpen}
+                onCancel={() => setCropModalOpen(false)}
+                footer={null}
+                width={980}
+            >
+                <Space wrap style={{ marginBottom: 12 }}>
+                    <Select
+                        style={{ width: 240 }}
+                        placeholder="Chọn thiết bị..."
+                        value={cropDeviceId || undefined}
+                        onChange={setCropDeviceId}
+                        options={devicesList.map((d) => ({ value: d.value, label: d.label }))}
+                    />
+                    <Button type="primary" icon={<CameraOutlined />} loading={capturing} onClick={handleCaptureScreen}>
+                        Chụp màn hình
+                    </Button>
+                    {cropRect && cropRect.w > 0 && (
+                        <Tag color="green">
+                            Vùng chọn: x={cropRect.x.toFixed(1)}%, y={cropRect.y.toFixed(1)}%, w={cropRect.w.toFixed(1)}%, h={cropRect.h.toFixed(1)}%
+                        </Tag>
+                    )}
+                </Space>
+
+                <Row gutter={[16, 16]}>
+                    <Col xs={24} md={14}>
+                        <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>
+                            Kéo chuột trái để cắt vùng ảnh mẫu · Ấn chuột phải vào điểm bất kỳ để lấy tọa độ &amp; chạm thử
+                        </div>
+                        <div
+                            ref={imgContainerRef}
+                            onMouseDown={handleMouseDown}
+                            onMouseMove={handleMouseMove}
+                            onMouseUp={handleMouseUp}
+                            onMouseLeave={handleMouseUp}
+                            onContextMenu={handleContextMenu}
+                            style={{
+                                position: 'relative',
+                                userSelect: 'none',
+                                cursor: screenUrl ? 'crosshair' : 'default',
+                                border: '1px solid #d9d9d9',
+                                borderRadius: 6,
+                                minHeight: screenUrl ? undefined : 280,
+                                background: '#fafafa',
+                                display: screenUrl ? 'block' : 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                overflow: 'hidden',
+                            }}
+                        >
+                            {screenUrl ? (
+                                <>
+                                    <img
+                                        ref={imgRef}
+                                        src={screenUrl}
+                                        alt="Device Screenshot"
+                                        draggable={false}
+                                        style={{ width: '100%', display: 'block', pointerEvents: 'none' }}
+                                    />
+                                    <CrosshairMarker point={pickedPoint} />
+                                    {cropRect && cropRect.w > 0 && cropRect.h > 0 && (
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                left: `${cropRect.x}%`,
+                                                top: `${cropRect.y}%`,
+                                                width: `${cropRect.w}%`,
+                                                height: `${cropRect.h}%`,
+                                                border: '2px dashed #52c41a',
+                                                backgroundColor: 'rgba(82, 196, 26, 0.15)',
+                                                pointerEvents: 'none',
+                                            }}
+                                        />
+                                    )}
+                                    {(testResult?.matches || []).map((m, idx) => (
+                                        <div
+                                            key={idx}
+                                            style={{
+                                                position: 'absolute',
+                                                left: `${m.x}%`,
+                                                top: `${m.y}%`,
+                                                width: `${m.w}%`,
+                                                height: `${m.h}%`,
+                                                border: '2px solid #1890ff',
+                                                backgroundColor: 'rgba(24, 144, 255, 0.15)',
+                                                pointerEvents: 'none',
+                                            }}
+                                        >
+                                            <span
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: -18,
+                                                    left: 0,
+                                                    background: '#1890ff',
+                                                    color: '#fff',
+                                                    fontSize: 10,
+                                                    padding: '0 4px',
+                                                    borderRadius: 2,
+                                                }}
+                                            >
+                                                {m.score}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </>
+                            ) : (
+                                <span style={{ color: '#999' }}>Chọn thiết bị và bấm "Chụp màn hình" để bắt đầu kéo cắt</span>
+                            )}
+                        </div>
+                    </Col>
+
+                    <Col xs={24} md={10}>
+                        <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                            <ScreenPointPanel point={pickedPoint} deviceId={cropDeviceId} />
+                            <Card size="small" title="1. Lưu ảnh mẫu từ vùng cắt">
+                                <Space direction="vertical" style={{ width: '100%' }} size="small">
+                                    <Select value={cropKeyType} onChange={setCropKeyType} style={{ width: '100%' }}>
+                                        <Option value="ItemKeys">ItemKeys</Option>
+                                        <Option value="TreeKeys">TreeKeys</Option>
+                                        <Option value="BugKeys">BugKeys</Option>
+                                        <Option value="ProductKeys">ProductKeys</Option>
+                                        <Option value="ProductTreeKeys">ProductTreeKeys</Option>
+                                        <Option value="ProductMineralKeys">ProductMineralKeys</Option>
+                                        <Option value="OtherKeys">OtherKeys</Option>
+                                        <Option value="EventKeys">EventKeys</Option>
+                                    </Select>
+                                    <Input
+                                        placeholder="Key Name (VD: myNewItem)"
+                                        value={cropKeyName}
+                                        onChange={(e) => {
+                                            const v = e.target.value
+                                            setCropKeyName(v)
+                                            setCropValue(v.toLowerCase().replace(/[^a-z0-9_-]/g, ''))
+                                        }}
+                                    />
+                                    <Input
+                                        placeholder="Value / tên file (không cần .png)"
+                                        value={cropValue}
+                                        onChange={(e) => setCropValue(e.target.value)}
+                                    />
+                                    <Button type="primary" block icon={<ScissorOutlined />} loading={cropSaving} onClick={handleCropSave}>
+                                        Cắt & Lưu thành ảnh mẫu
+                                    </Button>
+                                </Space>
+                            </Card>
+
+                            <Card size="small" title="2. Test khớp OpenCV trên ảnh chụp">
+                                <Space direction="vertical" style={{ width: '100%' }} size="small">
+                                    <Select
+                                        showSearch
+                                        style={{ width: '100%' }}
+                                        placeholder="Chọn ảnh mẫu để test..."
+                                        value={testTemplateValue || undefined}
+                                        onChange={setTestTemplateValue}
+                                        optionFilterProp="label"
+                                        options={imagesList
+                                            .filter((img) => img.hasImage)
+                                            .map((img) => ({
+                                                value: img.value,
+                                                label: `${img.keyType}: ${img.keyName} (${img.value})`,
+                                            }))}
+                                    />
+                                    <Select
+                                        style={{ width: '100%' }}
+                                        value={testPosition}
+                                        onChange={setTestPosition}
+                                        options={ROI_OPTIONS}
+                                    />
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span>Ngưỡng:</span>
+                                        <InputNumber min={0.3} max={0.99} step={0.05} value={testRate} onChange={(v) => setTestRate(v ?? 0.85)} />
+                                    </div>
+                                    <Button block icon={<AimOutlined />} loading={testLoading} onClick={handleTestMatch}>
+                                        Test nhận diện
+                                    </Button>
+                                    {testResult && (
+                                        <div style={{ fontSize: 12, background: '#f5f5f5', padding: 8, borderRadius: 4 }}>
+                                            <div>Best Score: <strong>{testResult.bestScore}</strong> / Ngưỡng: {testResult.threshold}</div>
+                                            <div>Số vị trí khớp: <strong>{testResult.matches?.length || 0}</strong></div>
+                                        </div>
+                                    )}
+                                </Space>
+                            </Card>
+                        </Space>
+                    </Col>
+                </Row>
             </Modal>
         </div>
     )

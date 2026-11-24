@@ -1,5 +1,5 @@
 const fs = require('fs')
-const { resolve } = require('path')
+const { resolve, dirname } = require('path')
 
 const filePath = {
     log: resolve(__dirname, '../../../data/log.json'),
@@ -9,32 +9,52 @@ const filePath = {
     autoUser: resolve(__dirname, '../../../data/auto_user.json'),
 }
 
+function readJsonSafe(targetPath, fallback) {
+    try {
+        if (!fs.existsSync(targetPath)) return fallback
+        const raw = fs.readFileSync(targetPath, 'utf8')
+        if (!raw || !raw.trim()) return fallback
+        return JSON.parse(raw)
+    } catch (e) {
+        return fallback
+    }
+}
+
+function writeJsonAtomic(targetPath, data, pretty = false) {
+    const dir = dirname(targetPath)
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+    const content = pretty ? JSON.stringify(data, null, 4) : JSON.stringify(data)
+    const tmpPath = `${targetPath}.tmp.${process.pid}.${Date.now()}`
+    fs.writeFileSync(tmpPath, content, 'utf8')
+    try {
+        fs.renameSync(tmpPath, targetPath)
+    } catch (err) {
+        try {
+            if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath)
+        } catch (_) {}
+        fs.writeFileSync(targetPath, content, 'utf8')
+    }
+}
+
 function getLogData() {
-    return JSON.parse(fs.readFileSync(filePath.log, 'utf8'))
+    return readJsonSafe(filePath.log, [])
 }
 
 function clearLogData() {
-    fs.writeFileSync(filePath.log, '[]')
+    writeJsonAtomic(filePath.log, [])
 }
 
 function getDeviceData() {
-    return JSON.parse(fs.readFileSync(filePath.device, 'utf8'))
+    return readJsonSafe(filePath.device, [])
 }
 
 function getGamesData() {
-    return JSON.parse(fs.readFileSync(filePath.game, 'utf8'))
+    return readJsonSafe(filePath.game, { listGameOption: [] })
 }
 
 function getAutoData() {
-    const defaults = JSON.parse(fs.readFileSync(filePath.auto, 'utf8'))
-    let userOnly = {}
-    if (fs.existsSync(filePath.autoUser)) {
-        try {
-            userOnly = JSON.parse(fs.readFileSync(filePath.autoUser, 'utf8'))
-        } catch (e) {
-            userOnly = {}
-        }
-    }
+    const defaults = readJsonSafe(filePath.auto, {})
+    const userOnly = readJsonSafe(filePath.autoUser, {})
     const merged = { ...defaults }
     for (const [game, list] of Object.entries(userOnly)) {
         if (!merged[game]) {
@@ -60,28 +80,30 @@ function readFileData(path) {
 }
 
 function writeLogData(object) {
-    fs.writeFileSync(filePath.log, JSON.stringify(object))
+    writeJsonAtomic(filePath.log, object)
 }
 
 function writeDeviceData(object) {
-    fs.writeFileSync(filePath.device, JSON.stringify(object))
+    writeJsonAtomic(filePath.device, object)
 }
 
 function writeAutoData(object) {
-    let defaults = {}
-    if (fs.existsSync(filePath.auto)) {
-        defaults = JSON.parse(fs.readFileSync(filePath.auto, 'utf8'))
-    }
+    const defaults = readJsonSafe(filePath.auto, {})
     const userOnly = {}
-    for (const [game, list] of Object.entries(object)) {
+    for (const [game, list] of Object.entries(object || {})) {
         const defaultList = defaults[game] || []
-        const defaultKeys = new Set(defaultList.map(x => x.key))
-        userOnly[game] = list.filter(item => !defaultKeys.has(item.key))
+        const defaultMap = new Map(defaultList.map(x => [x.key, x]))
+        userOnly[game] = (list || []).filter(item => {
+            if (!defaultMap.has(item.key)) return true
+            return JSON.stringify(item) !== JSON.stringify(defaultMap.get(item.key))
+        })
     }
-    fs.writeFileSync(filePath.autoUser, JSON.stringify(userOnly, null, 4))
+    writeJsonAtomic(filePath.autoUser, userOnly, true)
 }
 
 module.exports = {
+    readJsonSafe,
+    writeJsonAtomic,
     getLogData,
     clearLogData,
     getDeviceData,

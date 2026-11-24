@@ -1,8 +1,3 @@
-from flask import Flask, request, jsonify
-import easyocr
-import cv2
-import traceback
-import threading
 import os
 import sys
 
@@ -12,17 +7,20 @@ if hasattr(sys.stdout, 'reconfigure'):
 if hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8')
 
-import base64
-import numpy as np
-import cv2
-import traceback
-import threading
-import os
-
-# TRÓI CỔ AI: Giới hạn lượng CPU nó được phép sử dụng
+# TRÓI CỔ AI: Giới hạn lượng CPU nó được phép sử dụng (phải đặt trước khi nạp torch/easyocr/cv2)
 os.environ['OMP_NUM_THREADS'] = '1'
 os.environ['MKL_NUM_THREADS'] = '1'
+
+import base64
+import re
+import threading
+import traceback
+import cv2
+import easyocr
+import numpy as np
 import torch
+from flask import Flask, request, jsonify
+
 torch.set_num_threads(1)
 cv2.setNumThreads(1)
 
@@ -56,8 +54,12 @@ def run_ocr():
             np_arr = np.frombuffer(img_data, np.uint8)
             img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         elif data and 'image_path' in data:
-            # Hỗ trợ ngược cho bản cũ nếu cần
-            img = cv2.imread(data['image_path'])
+            # Hỗ trợ ngược cho bản cũ nếu cần (giới hạn trong thư mục dự án)
+            root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+            abs_img = os.path.abspath(str(data['image_path']))
+            if os.path.commonpath([root_dir, abs_img]) != root_dir:
+                return jsonify({"error": "Đường dẫn ảnh không hợp lệ"}), 400
+            img = cv2.imread(abs_img)
             
         if img is None:
             return jsonify({"error": "Không có dữ liệu ảnh hợp lệ"}), 400
@@ -78,8 +80,10 @@ def run_ocr():
 
         # LƯU ẢNH CẮT GỌN (Dùng để đối chiếu OCR)
         try:
-            device_id = data.get('device_id', 'unknown')
-            k_type = data.get('type', '1')
+            raw_device_id = str(data.get('device_id', 'unknown'))
+            raw_k_type = str(data.get('type', '1'))
+            device_id = re.sub(r'[^a-zA-Z0-9._-]', '_', raw_device_id)
+            k_type = re.sub(r'[^a-zA-Z0-9._-]', '_', raw_k_type)
             # Tìm đường dẫn repo (E:\Auto-kvtm) từ folder hiện tại (server/src/utils)
             root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
             save_dir = os.path.join(root_dir, "data_kho")

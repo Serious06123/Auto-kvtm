@@ -1,5 +1,19 @@
 [
     {
+        "version": "4.0.0",
+        "date": "2026-11-24",
+        "changes": [
+            "LƯU Ý TRƯỚC KHI UPDATE: Nên dùng tính năng Sao lưu / Khôi phục hoặc copy các auto tự chỉnh thành bản mới để giữ an toàn cấu hình cá nhân.",
+            "Chống kẹt bán hàng ban đêm 2 cấp (tùy chỉnh trong Tham số → Bán hàng): mặc định nghỉ chờ 5 giây mỗi lượt khi quầy đầy, đóng/mở lại quầy sau 4 chu kỳ trống để đồng bộ, thoát game vào lại sau 120 phút (2 tiếng) không bán thêm được món nào (không giới hạn số lần restart, vẫn giữ nguyên số lượng cần bán và dừng tức thì khi bấm Stop).",
+            "Treo máy dài hạn ổn định hơn với Watchdog tự phục hồi session Appium (mặc định khi đứng yên quá 20 phút hoặc 3 lỗi liên tiếp, tối đa 5 lần phục hồi), nút Tạm dừng / Tiếp tục / Dừng mềm và hiển thị tiến độ + log realtime.",
+            "Thêm Profile theo từng thiết bị (tự nhớ sau F5, tốc độ riêng từng máy, chạy tuần tự), Bộ hẹn giờ (Scheduler) và Chuỗi Auto nối tiếp (Playlist).",
+            "Thêm thanh Health Bar (ADB/Appium/OCR/RAM), cảnh báo sự cố từ xa qua Telegram / Discord, Thống kê theo ngày và Sao lưu / Khôi phục toàn bộ cấu hình.",
+            "Thêm Lịch sử hoạt động theo từng máy (tìm kiếm/copy log, tự chọn xóa liền sau khi dừng auto, sau X giờ, sau X ngày — mặc định 7 ngày, hoặc thủ công).",
+            "Nâng cấp Quản lý ảnh mẫu: chụp màn hình, kéo cắt ảnh mẫu, test khớp OpenCV trực tiếp và ấn chuột phải xem tọa độ + Copy driver.tap(x, y) + Chạm thử lên giả lập.",
+            "Thêm Trung tâm Hỗ trợ trên Header (FAQ hỏi đáp, Báo cáo lỗi kèm log/ảnh chụp, Đề xuất Auto) và tối ưu RAM với bộ nhớ đệm OpenCV."
+        ]
+    },
+    {
         "version": "3.1.6",
         "date": "2026-09-18",
         "changes": [

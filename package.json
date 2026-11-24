@@ -1,6 +1,6 @@
 {
     "name": "auto-tools",
-    "version": "3.1.6",
+    "version": "4.0.0",
     "description": "Auto Tools",
     "scripts": {
         "appium": "appium --base-path=/wd/hub --log-timestamp --local-timezone --log-no-colors --log-level error:warn --log ./log/appium.txt",
@@ -8,6 +8,7 @@
         "build": "webpack --mode=development --watch --config config/webpack.config.js",
         "release": "webpack --mode=production --config config/webpack.config.js",
         "start": "concurrently -n \"APPIUM,SERVER,WEBPACK\" -c \"bgBlue.bold,bgGreen.bold,bgMagenta.bold\" \"npm run appium\" \"npm run app\" \"npm run build\"",
+        "test": "node scratch/test_compensation.js",
         "commit": "git-cz"
     },
     "keywords": [

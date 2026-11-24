@@ -2,6 +2,7 @@ const multer = require('multer')
 const path = require('path')
 const fs = require('fs')
 const Jimp = require('jimp')
+const { invalidateTemplateCache } = require('../engine/image')
 
 // Configure multer storage
 const storage = multer.diskStorage({
@@ -19,6 +20,18 @@ const storage = multer.diskStorage({
 })
 
 const upload = multer({ storage: storage })
+
+const allowedKeyTypes = [
+    'ItemKeys',
+    'TreeKeys',
+    'BugKeys',
+    'ProductKeys',
+    'ProductTreeKeys',
+    'ProductMineralKeys',
+    'OtherKeys',
+    'EventKeys',
+    'AchievementKeys',
+]
 
 const updateConstFile = (keyType, keyName, keyValue) => {
     const customConstPath = path.resolve(__dirname, '../../../data/custom_const.json')
@@ -55,13 +68,33 @@ const handleUpload = (req, res) => {
             return res.status(400).json({ error: 'No file uploaded' })
         }
 
+        if (
+            !keyType ||
+            !keyName ||
+            !value ||
+            !allowedKeyTypes.includes(keyType) ||
+            !/^[a-zA-Z0-9._-]+$/.test(value) ||
+            value === '.' ||
+            value === '..' ||
+            /['"\r\n\\]/.test(keyName)
+        ) {
+            if (fs.existsSync(file.path)) fs.unlinkSync(file.path)
+            return res.status(400).json({ error: 'Invalid keyType, keyName, or value' })
+        }
+
         const finalFileName = `${value}.png`
-        const finalPath = path.resolve(file.destination, finalFileName)
+        const destDir = path.resolve(file.destination)
+        const finalPath = path.resolve(destDir, finalFileName)
+        if (!finalPath.startsWith(destDir + path.sep)) {
+            if (fs.existsSync(file.path)) fs.unlinkSync(file.path)
+            return res.status(400).json({ error: 'Invalid target file path' })
+        }
 
         // Read and transcode to PNG format
         Jimp.read(file.path)
             .then(image => {
                 return image.writeAsync(finalPath).then(() => {
+                    invalidateTemplateCache(finalPath)
                     // Delete temporary uploaded file
                     if (fs.existsSync(file.path)) {
                         fs.unlinkSync(file.path)

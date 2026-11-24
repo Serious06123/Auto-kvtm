@@ -1,7 +1,8 @@
 const Bluebird = require('bluebird')
+const fs = require('fs')
 const path = require('path')
-const { execSync } = require('child_process')
-const { runExecAsync, runSpawn } = require('../helper/shell')
+const { execFileSync } = require('child_process')
+const { runExecFileAsync, runSpawnArgs } = require('../helper/shell')
 const { logErrMsg } = require('../services/log')
 
 const getAdbPath = () => {
@@ -15,6 +16,40 @@ const getAdbPath = () => {
     }
 }
 
+const isValidDeviceId = (deviceId) => {
+    return (
+        typeof deviceId === 'string' &&
+        deviceId.length > 0 &&
+        deviceId.length <= 128 &&
+        /^[a-zA-Z0-9._:-]+$/.test(deviceId) &&
+        !deviceId.startsWith('-')
+    )
+}
+
+const sanitizeDeviceId = (deviceId) => {
+    return String(deviceId || 'unknown').replace(/[^a-zA-Z0-9._-]/g, '_')
+}
+
+const assertValidDeviceId = (deviceId) => {
+    if (!isValidDeviceId(deviceId)) {
+        throw new Error(`Invalid deviceId: ${String(deviceId)}`)
+    }
+}
+
+const parseWmSize = (output) => {
+    if (!output || typeof output !== 'string') return null
+    const overrideMatch = output.match(/Override size:\s*(\d+)\s*x\s*(\d+)/i)
+    const physicalMatch = output.match(/Physical size:\s*(\d+)\s*x\s*(\d+)/i)
+    const matched = overrideMatch || physicalMatch
+    if (!matched) return null
+    const width = Number(matched[1])
+    const height = Number(matched[2])
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+        return null
+    }
+    return { width, height }
+}
+
 // Auto detect available ADB port to avoid conflict
 const detectAdbPort = () => {
     if (process.env.ANDROID_ADB_SERVER_PORT) {
@@ -26,7 +61,7 @@ const detectAdbPort = () => {
     for (const port of portsToTry) {
         try {
             // Run a quick check using start-server on the specific port with a timeout
-            execSync(`"${adbBin}" -P ${port} start-server`, { stdio: 'ignore', timeout: 4000 })
+            execFileSync(adbBin, ['-P', String(port), 'start-server'], { stdio: 'ignore', timeout: 4000 })
             process.env.ANDROID_ADB_SERVER_PORT = port.toString()
             console.log(`[ADB] Successfully connected/started ADB daemon on port ${port}`)
             return
@@ -41,15 +76,16 @@ const detectAdbPort = () => {
 
 detectAdbPort()
 
-const adbPath = `"${getAdbPath()}"`
+const adbBin = getAdbPath()
 
 const getDeviceNameById = async (deviceId) => {
-    if (!deviceId.includes("emulator")) return deviceId
+    if (!isValidDeviceId(deviceId) || !deviceId.includes('emulator')) return deviceId
     try {
         switch (process.platform) {
-            case 'darwin':
-                const output = await runExecAsync(`${adbPath} -s ${deviceId} emu avd name`)
+            case 'darwin': {
+                const output = await runExecFileAsync(adbBin, ['-s', deviceId, 'emu', 'avd', 'name'])
                 return output.match(/([^\r\n]+)/g)[0].replaceAll('_', ' ')
+            }
             default:
                 return deviceId
         }
@@ -63,7 +99,7 @@ const getDeviceNameById = async (deviceId) => {
 class ADBHelper {
     static getDevices = async () => {
         const ignoreText = ['device', 'offline']
-        const output = await runExecAsync(`${adbPath} devices`)
+        const output = await runExecFileAsync(adbBin, ['devices'])
         const deviceIds = output
             .substring(output.indexOf('\n') + 1)
             .match(/[\S]+/g)
@@ -75,10 +111,19 @@ class ADBHelper {
         }))
     }
 
-    static screenCap = async (deviceId, path) => await runExecAsync(`${adbPath} -s ${deviceId} exec-out screencap -p > ${path}`)
+    static screenCap = async (deviceId, outputPath) => {
+        assertValidDeviceId(deviceId)
+        const stdout = await runExecFileAsync(
+            adbBin,
+            ['-s', deviceId, 'exec-out', 'screencap', '-p'],
+            { encoding: 'buffer', maxBuffer: 25 * 1024 * 1024 }
+        )
+        fs.writeFileSync(outputPath, stdout)
+    }
 
     static screenRecord = (deviceId, outputHandler = null) => {
-        const streamProcess = runSpawn(`${adbPath} -s ${deviceId} exec-out screenrecord --output-format=h264 -`)
+        assertValidDeviceId(deviceId)
+        const streamProcess = runSpawnArgs(adbBin, ['-s', deviceId, 'exec-out', 'screenrecord', '--output-format=h264', '-'])
         streamProcess.stdout.on('data', (data) => {
             outputHandler && outputHandler(data)
         })
@@ -87,14 +132,51 @@ class ADBHelper {
     }
     static isPackageInstalled = async (deviceId, packageName) => {
         try {
-            const output = await runExecAsync(`${adbPath} -s ${deviceId} shell pm list packages ${packageName}`)
+            assertValidDeviceId(deviceId)
+            const output = await runExecFileAsync(adbBin, ['-s', deviceId, 'shell', 'pm', 'list', 'packages', String(packageName)])
             return output.includes(`package:${packageName}`)
         } catch (err) {
             return false
+        }
+    }
+
+    static getScreenSize = async (deviceId) => {
+        assertValidDeviceId(deviceId)
+        const output = await runExecFileAsync(adbBin, ['-s', deviceId, 'shell', 'wm', 'size'])
+        return parseWmSize(output)
+    }
+
+    static tapPercent = async (deviceId, xPercent, yPercent) => {
+        assertValidDeviceId(deviceId)
+        const xNum = Number(xPercent)
+        const yNum = Number(yPercent)
+        if (!Number.isFinite(xNum) || !Number.isFinite(yNum) || xNum < 0 || xNum > 100 || yNum < 0 || yNum > 100) {
+            const err = new Error('Coordinates xPercent and yPercent must be finite numbers in [0, 100]')
+            err.statusCode = 400
+            throw err
+        }
+        const size = await ADBHelper.getScreenSize(deviceId)
+        if (!size) {
+            throw new Error(`Không đọc được kích thước màn hình thiết bị ${deviceId} từ ADB`)
+        }
+        const pxX = Math.max(0, Math.min(size.width - 1, Math.round((size.width * xNum) / 100)))
+        const pxY = Math.max(0, Math.min(size.height - 1, Math.round((size.height * yNum) / 100)))
+        await runExecFileAsync(adbBin, ['-s', deviceId, 'shell', 'input', 'tap', String(pxX), String(pxY)])
+        return {
+            deviceId,
+            xPercent: xNum,
+            yPercent: yNum,
+            pxX,
+            pxY,
+            width: size.width,
+            height: size.height,
         }
     }
 }
 
 module.exports = {
     ADBHelper,
+    isValidDeviceId,
+    sanitizeDeviceId,
+    parseWmSize,
 }

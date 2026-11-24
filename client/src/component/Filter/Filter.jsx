@@ -27,7 +27,7 @@ const Filter = (props) => {
                 setDevicesOption(response.data.listDevices)
                 setListGameOption(response.data.listGameOption)
                 setSelectedDevices(response.data.listDevices.filter((x) => !x.disabled).map((x) => x.value))
-                setSelectedGame(response.data.listGameOption[0].key)
+                setSelectedGame((prev) => prev || response.data.listGameOption[0]?.key || '')
             })
     }
 
@@ -58,6 +58,53 @@ const Filter = (props) => {
             .then((response) => {
                 props.setRefreshTime(moment().format('LTS'))
             })
+    }
+
+    const runBatchProfiles = async (profiles) => {
+        if (!Array.isArray(profiles) || profiles.length === 0) {
+            return openNotification('Thông báo', 'Chưa có Profile nào để chạy!')
+        }
+        const availableSet = new Set(devicesOption.filter((d) => !d.disabled).map((d) => d.value))
+        const claimedDevices = new Set()
+        let startedCount = 0
+
+        for (const profile of profiles) {
+            const runAutoKey = profile.selectedAuto || profile.gameOptions?.runAuto
+            if (!runAutoKey) continue
+            const targetGame = profile.selectedGame || selectedGame
+            const targetDevices = (profile.deviceIds || []).filter((id) => availableSet.has(id) && !claimedDevices.has(id))
+            if (targetDevices.length === 0) continue
+
+            targetDevices.forEach((id) => claimedDevices.add(id))
+            const opts = {
+                ...(profile.gameOptions || {}),
+                runAuto: runAutoKey,
+            }
+            if (profile.speedMultiplierOverride >= 1) {
+                opts.speedMultiplierOverride = profile.speedMultiplierOverride
+            }
+            try {
+                await axios.post('/api/start', {
+                    selectedDevices: targetDevices,
+                    selectedGame: targetGame,
+                    gameOptions: opts,
+                })
+                startedCount += targetDevices.length
+            } catch (err) {
+                openNotification('Lỗi chạy Profile', `${profile.name}: ${err.response?.data?.error || err.message}`)
+            }
+        }
+
+        if (startedCount > 0) {
+            api.success({
+                message: 'Đã khởi chạy Profile',
+                description: `Đã bật tự động cho ${startedCount} thiết bị theo cấu hình Profile.`,
+                duration: 3,
+            })
+            props.setRefreshTime(moment().format('LTS'))
+        } else {
+            openNotification('Thông báo', 'Không có thiết bị rảnh nào khớp với danh sách thiết bị trong các Profile.')
+        }
     }
 
     return (
@@ -109,7 +156,14 @@ const Filter = (props) => {
                 <Col xs={24} lg={16}>
                     {/* GAME OPTIONS AREA */}
                     <div style={{ background: '#fff', padding: 24, borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.03)', height: '100%' }}>
-                        <GameOptionsFilter selectedGame={selectedGame} runAuto={runAuto} />
+                        <GameOptionsFilter
+                            selectedGame={selectedGame}
+                            runAuto={runAuto}
+                            selectedDevices={selectedDevices}
+                            setSelectedDevices={setSelectedDevices}
+                            devicesOption={devicesOption}
+                            runBatchProfiles={runBatchProfiles}
+                        />
                     </div>
                 </Col>
             </Row>
