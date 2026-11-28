@@ -220,6 +220,7 @@ async function findCoordinates(data, itemFilePath, findPosition = null, rate = n
     let src = null
     let templ = null
     let processedImage = null
+    let binaryMat = null
     let mask = null
     let contours = null
     let hierarchy = null
@@ -228,6 +229,7 @@ async function findCoordinates(data, itemFilePath, findPosition = null, rate = n
         src = cv.matFromImageData(imageSource.bitmap)
         templ = await getCachedTemplateMat(itemFilePath)
         processedImage = new cv.Mat()
+        binaryMat = new cv.Mat()
         mask = new cv.Mat()
         contours = new cv.MatVector()
         hierarchy = new cv.Mat()
@@ -235,20 +237,69 @@ async function findCoordinates(data, itemFilePath, findPosition = null, rate = n
         const thresholdVal = rate !== null ? rate : P('image.defaultMatchRate')
 
         cv.matchTemplate(src, templ, processedImage, cv.TM_CCOEFF_NORMED, mask)
-        cv.threshold(processedImage, processedImage, thresholdVal, 1, cv.THRESH_BINARY)
-        processedImage.convertTo(processedImage, cv.CV_8UC1)
-        cv.findContours(processedImage, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+        cv.threshold(processedImage, binaryMat, thresholdVal, 1, cv.THRESH_BINARY)
+        binaryMat.convertTo(binaryMat, cv.CV_8UC1)
+        cv.findContours(binaryMat, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
         let result = []
         for (let i = 0; i < contours.size(); ++i) {
-            let point = contours.get(i).data32S
-            const pointA = new cv.Point(point[0], point[1])
-            const pointB = new cv.Point(point[0] + templ.cols, point[1] + templ.rows)
-            result.push({
-                x: Math.floor((pointA.x + pointB.x) / 2),
-                y: Math.floor((pointA.y + pointB.y) / 2),
-            })
+            const contourMat = contours.get(i)
+            try {
+                let minX = 0
+                let minY = 0
+                let maxX = 0
+                let maxY = 0
+                if (typeof cv.boundingRect === 'function') {
+                    const rect = cv.boundingRect(contourMat)
+                    minX = rect.x
+                    minY = rect.y
+                    maxX = rect.x + Math.max(0, rect.width - 1)
+                    maxY = rect.y + Math.max(0, rect.height - 1)
+                } else {
+                    const pts = contourMat.data32S
+                    minX = pts[0]
+                    minY = pts[1]
+                    maxX = pts[0]
+                    maxY = pts[1]
+                    for (let k = 2; k + 1 < pts.length; k += 2) {
+                        if (pts[k] < minX) minX = pts[k]
+                        if (pts[k] > maxX) maxX = pts[k]
+                        if (pts[k + 1] < minY) minY = pts[k + 1]
+                        if (pts[k + 1] > maxY) maxY = pts[k + 1]
+                    }
+                }
+
+                const startX = Math.max(0, minX)
+                const startY = Math.max(0, minY)
+                const endX = Math.min(processedImage.cols - 1, maxX)
+                const endY = Math.min(processedImage.rows - 1, maxY)
+
+                let bestX = startX
+                let bestY = startY
+                let bestScore = -Infinity
+                for (let ry = startY; ry <= endY; ry++) {
+                    for (let rx = startX; rx <= endX; rx++) {
+                        const val = processedImage.floatAt(ry, rx)
+                        if (val > bestScore) {
+                            bestScore = val
+                            bestX = rx
+                            bestY = ry
+                        }
+                    }
+                }
+
+                result.push({
+                    x: Math.floor(bestX + templ.cols / 2),
+                    y: Math.floor(bestY + templ.rows / 2),
+                    score: Number.isFinite(bestScore) ? bestScore : 0,
+                })
+            } finally {
+                contourMat && contourMat.delete()
+            }
         }
+
+        // Sắp xếp tăng dần theo độ khớp để points[points.length - 1] luôn là điểm khớp chính xác nhất
+        result.sort((a, b) => a.score - b.score)
 
         return result.map((point) => getPercentByPoint(point, isRotated, findPosition))
     } catch (err) {
@@ -257,6 +308,7 @@ async function findCoordinates(data, itemFilePath, findPosition = null, rate = n
     } finally {
         src && src.delete()
         processedImage && processedImage.delete()
+        binaryMat && binaryMat.delete()
         mask && mask.delete()
         contours && contours.delete()
         hierarchy && hierarchy.delete()
@@ -486,26 +538,31 @@ async function testMatchCoordinates(screenBuffer, itemFilePath, findPosition = n
 
         const matches = []
         for (let i = 0; i < contours.size(); ++i) {
-            const point = contours.get(i).data32S
-            const px = point[0]
-            const py = point[1]
-            let score = bestScore
+            const contourMat = contours.get(i)
             try {
-                if (py >= 0 && py < rawResult.rows && px >= 0 && px < rawResult.cols) {
-                    const localVal = rawResult.floatAt(py, px)
-                    if (Number.isFinite(localVal)) score = localVal
-                }
-            } catch (_) {}
+                const point = contourMat.data32S
+                const px = point[0]
+                const py = point[1]
+                let score = bestScore
+                try {
+                    if (py >= 0 && py < rawResult.rows && px >= 0 && px < rawResult.cols) {
+                        const localVal = rawResult.floatAt(py, px)
+                        if (Number.isFinite(localVal)) score = localVal
+                    }
+                } catch (_) {}
 
-            matches.push({
-                x: ((px + offsetX) / totalW) * 100.0,
-                y: ((py + offsetY) / totalH) * 100.0,
-                w: (templ.cols / totalW) * 100.0,
-                h: (templ.rows / totalH) * 100.0,
-                centerX: ((px + offsetX + templ.cols / 2) / totalW) * 100.0,
-                centerY: ((py + offsetY + templ.rows / 2) / totalH) * 100.0,
-                score: Math.round(score * 1000) / 1000,
-            })
+                matches.push({
+                    x: ((px + offsetX) / totalW) * 100.0,
+                    y: ((py + offsetY) / totalH) * 100.0,
+                    w: (templ.cols / totalW) * 100.0,
+                    h: (templ.rows / totalH) * 100.0,
+                    centerX: ((px + offsetX + templ.cols / 2) / totalW) * 100.0,
+                    centerY: ((py + offsetY + templ.rows / 2) / totalH) * 100.0,
+                    score: Math.round(score * 1000) / 1000,
+                })
+            } finally {
+                contourMat && contourMat.delete()
+            }
         }
 
         return {

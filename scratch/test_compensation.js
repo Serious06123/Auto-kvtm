@@ -567,6 +567,8 @@ async function runTests() {
             'sell.maxStaleRestarts': 2,
             'sell.openShopDelay': 0,
             'sell.afterScrollDelay': 0,
+            'sell.afterScrollToStartDelay': 0,
+            'sell.emptySlotDelay': 0,
             'sell.selectSlotDelay': 0,
             'sell.collectMoneyDelay': 0,
             'scroll.delayBetweenSwipe': 0,
@@ -1307,8 +1309,149 @@ async function runTests() {
         activityLog.clearDeviceHistory()
         console.log('  -> PASSED: ActivityLog sessions, level detection & retention pruning passed.\n')
 
+        // --- Test 36: findCoordinates score sorting + sellItems non-compensated delays & sell logs ---
+        console.log('Test 36: findCoordinates best-score sorting & sellItems delay preservation...')
+        resetAll()
+        invalidateTemplateCache()
+        const exactGem = await Jimp.read(srcGem)
+        const noisyGem = exactGem.clone()
+        // Slightly alter a small corner of noisyGem so its score stays above 0.85 but below exactGem (~1.0)
+        for (let py = 0; py < Math.min(6, noisyGem.bitmap.height); py++) {
+            for (let px = 0; px < Math.min(6, noisyGem.bitmap.width); px++) {
+                noisyGem.setPixelColor(0xffffffff, px, py)
+            }
+        }
+        const multiCanvas = new Jimp(1000, 1000, 0x202020ff)
+        multiCanvas.composite(exactGem, 150, 200)
+        multiCanvas.composite(noisyGem, 600, 700)
+        const multiBuf = await multiCanvas.getBufferAsync(Jimp.MIME_PNG)
+        const rankedPoints = await findCoordinates(multiBuf, srcGem, null, 0.85)
+        assert(rankedPoints.length >= 2, `Expected >=2 matches, got ${rankedPoints.length}`)
+        const bestPt = rankedPoints[rankedPoints.length - 1]
+        const exactCenterX = ((150 + exactGem.bitmap.width / 2) / 1000) * 100
+        const exactCenterY = ((200 + exactGem.bitmap.height / 2) / 1000) * 100
+        assert(Math.abs(bestPt.x - exactCenterX) <= 1.0, `Expected best point near x=${exactCenterX}, got ${bestPt.x}`)
+        assert(Math.abs(bestPt.y - exactCenterY) <= 1.0, `Expected best point near y=${exactCenterY}, got ${bestPt.y}`)
+        invalidateTemplateCache()
+
+        saveAll({
+            'global.speedMultiplier': 1.5,
+            'global.dynamicSleepCompensation': true,
+            'sell.openShopDelay': 1.0,
+            'sell.afterScrollToStartDelay': 1.5,
+            'sell.emptySlotDelay': 0.6,
+            'sell.selectSlotDelay': 0.5,
+            'sell.collectMoneyDelay': 0.5,
+            'scroll.delayBetweenSwipe': 0.2,
+            'game.backToGameDelay': 0.1,
+            'image.postTapDelay': 0,
+        })
+        const sellPausedMs = []
+        const fastMockWd = {
+            pause: async (ms) => {
+                sellPausedMs.push(ms)
+            },
+            executeScript: async () => {},
+            action: () => {
+                const chain = {
+                    move: () => chain,
+                    down: () => chain,
+                    pause: () => chain,
+                    up: () => chain,
+                    perform: async () => {},
+                }
+                return chain
+            },
+            getWindowSize: async () => ({ width: 1280, height: 720 }),
+        }
+        const sellDriver = new Driver(fastMockWd, 'test-sell-guard')
+        sellDriver.width = 1280
+        sellDriver.height = 720
+
+        // Repeated slow swipes at 1.5x must cap accumulatedDelay at 5000ms instead of growing unboundedly
+        for (let k = 0; k < 10; k++) {
+            await sellDriver.action([
+                { duration: 0, x: 74.4, y: 54.9 },
+                { duration: 3000, x: 23.8, y: 54.9 },
+            ])
+        }
+        assert.strictEqual(sellDriver.accumulatedDelay, 5000, `accumulatedDelay must cap at 5000ms (got ${sellDriver.accumulatedDelay})`)
+
+        const sellLogged = []
+        sellDriver.appendLog = (msg) => sellLogged.push(msg)
+        sellDriver.getCoordinateItemOnScreen = async (itemPath) => {
+            if (itemPath && itemPath.includes('o-trong-ban')) return { x: 30, y: 43.5 }
+            return null
+        }
+        sellDriver.tapItemOnScreen = async () => {
+            sellDriver.lastTappedPoint = { x: 18.5, y: 48.2 }
+            return true
+        }
+        sellDriver.haveItemOnScreen = async () => false
+        sellDriver.isStopped = () => false
+
+        await core.sellItems(
+            sellDriver,
+            SellItemOptions.tree,
+            [{ key: 'p-tra', value: 1 }],
+            { value: 0 },
+            { value: 0 },
+            false,
+            true,
+            false,
+            true
+        )
+        assert(sellPausedMs.includes(1500), `Expected 1500ms afterScrollToStartDelay preserved, got ${JSON.stringify(sellPausedMs)}`)
+        assert(sellPausedMs.includes(600), `Expected 600ms emptySlotDelay preserved, got ${JSON.stringify(sellPausedMs)}`)
+        assert(sellPausedMs.includes(500), `Expected 500ms selectSlotDelay & backToGame preserved, got ${JSON.stringify(sellPausedMs)}`)
+        assert(sellPausedMs.includes(200), `Expected 200ms _sell delay preserved, got ${JSON.stringify(sellPausedMs)}`)
+        assert(sellPausedMs.includes(100), `Expected 100ms backToGame delay preserved, got ${JSON.stringify(sellPausedMs)}`)
+        assert.strictEqual(sellDriver.accumulatedDelay, 0, `Expected sellItems to reset accumulatedDelay to 0 on exit (got ${sellDriver.accumulatedDelay})`)
+        assert(sellLogged.some((line) => line.includes('p-tra') && line.includes('18.5%')), 'Expected sell log with itemId and tapped coord')
+
+        // Check goUp, goDown, goDownLast stay completely fixed (unscaled swipe speed & fixed delays, no compensation deduction) at 1.5x
+        saveAll({
+            'global.speedMultiplier': 1.5,
+            'global.dynamicSleepCompensation': true,
+            'scroll.swipeSpeed': 0,
+            'scroll.delayBetweenSwipe': 0.1,
+            'scroll.delayAfterScroll': 0.3,
+            'scroll.goDownLastMinSleep': 0.6,
+            'scroll.goDownLastMaxSleep': 1.5,
+            'scroll.goDownLastPerFloor': 0.1,
+        })
+        const scrollPausedMs = []
+        const scrollSwipeArgs = []
+        const scrollDriver = new Driver(
+            {
+                ...fastMockWd,
+                pause: async (ms) => scrollPausedMs.push(ms),
+                executeScript: async (script, args) => {
+                    if (script === 'mobile:swipeGesture' && Array.isArray(args) && args[0]) {
+                        scrollSwipeArgs.push(args[0])
+                    }
+                },
+            },
+            'test-scroll-fixed'
+        )
+        scrollDriver.width = 1280
+        scrollDriver.height = 720
+        scrollDriver.accumulatedDelay = 5000
+        await core.goUp(scrollDriver, 1)
+        await core.goDown(scrollDriver, 1)
+        scrollDriver.currentFloor = 0
+        await core.goDownLast(scrollDriver)
+        assert(scrollSwipeArgs.length > 0 && scrollSwipeArgs.every((arg) => arg.speed === undefined), `Expected goUp/goDown/goDownLast swipes to omit speed (fixed unscaled), got ${JSON.stringify(scrollSwipeArgs)}`)
+        assert(scrollPausedMs.includes(100), `Expected fixed 0.1s = 100ms in goUp/goDown/goDownLast, got ${JSON.stringify(scrollPausedMs)}`)
+        assert(scrollPausedMs.includes(300), `Expected fixed 0.3s = 300ms in goUp/goDown/goDownLast, got ${JSON.stringify(scrollPausedMs)}`)
+        assert(scrollPausedMs.includes(600), `Expected fixed 0.6s = 600ms in goDownLast, got ${JSON.stringify(scrollPausedMs)}`)
+        assert(!scrollPausedMs.includes(150) && !scrollPausedMs.includes(450) && !scrollPausedMs.includes(900), `Expected fixed unscaled delays (not 1.5x scaled), got ${JSON.stringify(scrollPausedMs)}`)
+        assert(!scrollPausedMs.includes(0), `Scroll/floor delays must never be deducted to 0ms, got ${JSON.stringify(scrollPausedMs)}`)
+        assert.strictEqual(scrollDriver.accumulatedDelay, 5000, `Expected goUp/goDown/goDownLast not to increase or consume accumulatedDelay (got ${scrollDriver.accumulatedDelay})`)
+        console.log('  -> PASSED: findCoordinates best-score sorting & sellItems/fixed-scroll delay preservation passed.\n')
+
         console.log('=====================================================')
-        console.log('ALL TESTS PASSED SUCCESSFULLY! (35/35 test suites)')
+        console.log('ALL TESTS PASSED SUCCESSFULLY! (36/36 test suites)')
         console.log('=====================================================')
     } finally {
         resetAll()

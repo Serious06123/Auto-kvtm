@@ -156,6 +156,11 @@ class Runner {
                 lastActivityAt: entry.lastActivityAt,
             });
         };
+        driver.appendLog = (msg) => {
+            if (!msg) return;
+            const line = String(msg).endsWith('\n') ? String(msg) : `${msg}\n`;
+            appendDeviceLog(deviceId, line, entry.activitySessionId);
+        };
         const overrideSpeed = Number(entry.params?.gameOptions?.speedMultiplierOverride);
         if (!isNaN(overrideSpeed) && overrideSpeed >= 1) {
             driver.speedMultiplierOverride = Math.min(3, overrideSpeed);
@@ -313,6 +318,7 @@ class Runner {
                 const postPauseIdx = this.queue.findIndex(x => x.id === deviceId);
                 if (postPauseIdx === -1 || !this.queue[postPauseIdx].isRunning) break;
                 if (entry.stopAfterLoop) break;
+                if (entry.driver) entry.driver.accumulatedDelay = 0;
 
                 let effectiveParams = params;
                 let stepPrefix = '';

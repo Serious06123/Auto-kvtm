@@ -1,5 +1,15 @@
 [
     {
+        "version": "4.0.1",
+        "date": "2026-11-28",
+        "changes": [
+            "Sửa lỗi treo lâu 3–4 tiếng hoặc chỉnh tốc độ 1.5x–3x bị lệch tầng / bán nhầm vật phẩm: bảo vệ toàn bộ nhịp chờ giao diện trong core.js (không trừ sleep về 0ms), đồng thời giữ cố định tốc độ vuốt và thời gian nghỉ chuyển tầng của goUp, goDown, goDownLast bất kể mức tốc độ đang chọn.",
+            "Đặt trần an toàn tối đa 5 giây cho bộ cộng dồn bù trừ (accumulatedDelay) và reset sạch sau khi bán hàng & đầu mỗi vòng chạy để tránh dồn trễ hàng chục giây khi treo nhiều giờ.",
+            "Cải thiện OpenCV findCoordinates: giải phóng từng contour Mat chống rò rỉ bộ nhớ WASM khi treo nhiều giờ và sắp xếp kết quả theo độ khớp (score) cao nhất.",
+            "Bổ sung về tầng trệt (goDownLast) sau khi thoát game vào lại trong phục hồi bán hàng Cấp 2 và ghi log chi tiết tên vật phẩm + tọa độ đã bán vào Lịch sử hoạt động."
+        ]
+    },
+    {
         "version": "4.0.0",
         "date": "2026-11-24",
         "changes": [

@@ -7,6 +7,7 @@ const { P } = require('../services/params')
 
 const Base64Regex = /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/
 const SupportRecordVideo = false
+const MAX_ACCUMULATED_DELAY_MS = 5000
 
 const getRandomInt = (min, max) => {
     min = Math.ceil(min)
@@ -59,6 +60,8 @@ class Driver {
         this.speedMultiplierOverride = null
         this.waitIfPaused = null
         this.setStep = null
+        this.lastTappedPoint = null
+        this.appendLog = null
     }
 
     startRecordingScreen = async () => {
@@ -83,6 +86,8 @@ class Driver {
         this.height = height
     }
 
+    getSpeedMultiplier = () => resolveSpeedMultiplier(this.speedMultiplierOverride)
+
     getX = (x) => Math.round((this.width * (Number(x) || 0)) / 100.0) + randOffset()
     getY = (y) => Math.round((this.height * (Number(y) || 0)) / 100.0) + randOffset()
 
@@ -103,7 +108,7 @@ class Driver {
             const actualMs = Math.round(baseMs * (multiplier > 1 ? multiplier : 1.0))
             const delta = Math.max(0, actualMs - baseMs)
             if (P('global.dynamicSleepCompensation')) {
-                this.accumulatedDelay = (this.accumulatedDelay || 0) + delta
+                this.accumulatedDelay = Math.min(MAX_ACCUMULATED_DELAY_MS, (this.accumulatedDelay || 0) + delta)
             } else {
                 this.accumulatedDelay = 0
             }
@@ -158,13 +163,14 @@ class Driver {
         return Buffer.from(String(base64), 'base64')
     }
 
-    swipe = async (pointA, pointB, direction) => {
+    swipe = async (pointA, pointB, direction, options = {}) => {
+        const { scaleSpeed = true } = options
         const left = Math.min(pointA.x, pointB.x)
         const top = Math.min(pointA.y, pointB.y)
         const width = Math.max(Math.abs(pointA.x - pointB.x), 1)
         const height = Math.max(Math.abs(pointA.y - pointB.y), 1)
 
-        const multiplier = resolveSpeedMultiplier(this.speedMultiplierOverride)
+        const multiplier = scaleSpeed ? resolveSpeedMultiplier(this.speedMultiplierOverride) : 1.0
         const configuredSpeed = Number(P('scroll.swipeSpeed')) || 0
         const baseSpeed = configuredSpeed > 0 ? configuredSpeed : 5000
         const speed = multiplier > 1
@@ -182,7 +188,7 @@ class Driver {
             const tActual = Math.round((distance / actualSpeed) * 1000)
             const delta = Math.max(0, tActual - tOrig)
             if (P('global.dynamicSleepCompensation')) {
-                this.accumulatedDelay = (this.accumulatedDelay || 0) + delta
+                this.accumulatedDelay = Math.min(MAX_ACCUMULATED_DELAY_MS, (this.accumulatedDelay || 0) + delta)
             } else {
                 this.accumulatedDelay = 0
             }
@@ -243,7 +249,7 @@ class Driver {
         }
 
         if (P('global.dynamicSleepCompensation')) {
-            this.accumulatedDelay = (this.accumulatedDelay || 0) + deltaSum
+            this.accumulatedDelay = Math.min(MAX_ACCUMULATED_DELAY_MS, (this.accumulatedDelay || 0) + deltaSum)
         } else {
             this.accumulatedDelay = 0
         }
@@ -284,7 +290,9 @@ class Driver {
             const data = await this.screenshot()
             const points = await findCoordinates(data, itemFilePath, findPosition, rate)
             if (points.length > 0) {
-                await this.tap(points[points.length - 1].x, points[points.length - 1].y)
+                const target = points[points.length - 1]
+                await this.tap(target.x, target.y)
+                this.lastTappedPoint = { x: target.x, y: target.y }
                 return true
             }
             await this.sleep(P('image.retryDelay'), { compensate: false })

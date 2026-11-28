@@ -51,6 +51,8 @@ const params = [
     { key: 'sell.scrollShopDuration', group: 'sell', label: 'Tốc độ vuốt danh sách quầy', default: 300, min: 50, max: 5000, step: 50, unit: 'ms' },
     { key: 'sell.scrollBackDuration', group: 'sell', label: 'Tốc độ vuốt quay lại đầu quầy', default: 3000, min: 100, max: 10000, step: 100, unit: 'ms' },
     { key: 'sell.afterScrollDelay', group: 'sell', label: 'Nghỉ sau khi cuộn quầy', default: 0.5, min: 0, max: 5, step: 0.05, unit: 's', description: 'Thời gian nghỉ sau khi cuộn danh sách kệ hàng để chờ hình ảnh ổn định.' },
+    { key: 'sell.afterScrollToStartDelay', group: 'sell', label: 'Nghỉ sau khi cuộn về đầu quầy', default: 1.5, min: 0, max: 5, step: 0.1, unit: 's', description: 'Thời gian nghỉ chờ danh sách quầy đứng yên sau khi vuốt quay lại đầu kệ (mặc định 1.5s chuẩn 3.1.6).' },
+    { key: 'sell.emptySlotDelay', group: 'sell', label: 'Nghỉ sau khi bấm ô trống bán hàng', default: 0.6, min: 0, max: 3, step: 0.05, unit: 's', description: 'Thời gian chờ bảng chọn vật phẩm mở ra sau khi chạm ô bán trống (mặc định 0.6s chuẩn 3.1.6).' },
     { key: 'sell.selectSlotDelay', group: 'sell', label: 'Nghỉ khi chọn ô bán / đổi tab', default: 0.5, min: 0, max: 3, step: 0.05, unit: 's', description: 'Thời gian nghỉ sau khi bấm vào ô bán trống hoặc bấm chuyển tab vật phẩm.' },
     { key: 'sell.collectMoneyDelay', group: 'sell', label: 'Nghỉ khi nhận tiền ô đã bán', default: 0.5, min: 0, max: 3, step: 0.05, unit: 's', description: 'Thời gian nghỉ sau khi chạm thu tiền từ ô hàng đã bán thành công.' },
     { key: 'sell.eventScrollDuration', group: 'sell', label: 'Tốc độ vuốt danh sách đồ sự kiện', default: 3000, min: 100, max: 10000, step: 100, unit: 'ms' },
